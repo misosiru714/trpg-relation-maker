@@ -6,6 +6,9 @@
     <title>TRPG 相関図メーカー</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+    <!-- 検索結果の説明のやつ -->
+    <meta name="description" content="TRPGのキャラクター相関図を簡単に作成できるウェブアプリです。キャラクターの画像や名前、関係性を自由に編集して、オリジナルの相関図を作成しましょう！">
+    <meta property="og:site_name" content="TRPG 相関図メーカー">
     <style>
         body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; overflow: hidden; }
         
@@ -184,6 +187,15 @@
         .node.connecting-source .node-image-container { border-color: #f87171; box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.5); }
     </style>
 </head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J74WB2H9G"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-0J74WB2H9G');
+</script>
 <body class="h-screen w-screen flex flex-col bg-slate-50 text-slate-800">
 
     <header class="bg-white shadow-sm z-30 px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200">
