@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRPG 相関図メーカー</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
     <style>
         body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; overflow: hidden; }
         
@@ -374,6 +375,21 @@
 
     </div>
 
+    <!-- クロップ用オーバーレイ -->
+    <div id="cropOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden z-[60] flex items-center justify-center opacity-0 transition-opacity duration-200">
+        <div id="cropModal" class="bg-white p-6 rounded-xl shadow-2xl w-11/12 max-w-lg hidden flex-col gap-4 transform scale-95 transition-transform duration-200">
+            <h2 class="text-lg font-bold text-slate-800">画像の切り抜き</h2>
+            <div class="w-full h-[50vh] bg-slate-100 flex items-center justify-center overflow-hidden">
+                <img id="cropTargetImg" src="" class="max-w-full max-h-full block">
+            </div>
+            <div class="flex justify-end mt-2 pt-4 border-t border-slate-100 gap-2">
+                <button id="btnCancelCrop" class="text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-bold transition-colors">キャンセル</button>
+                <button id="btnApplyCrop" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm">切り抜く</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script>
         // --- 状態管理 ---
         const LOCAL_STORAGE_KEY = 'trpg_diagram_data_v3';
@@ -1163,6 +1179,24 @@
             document.getElementById('btnSaveNode').addEventListener('click', saveNode);
             document.getElementById('btnDeleteNode').addEventListener('click', deleteNode);
             document.getElementById('btnChangeImage').addEventListener('click', () => imageUploader.click());
+
+            document.getElementById('btnCancelCrop').addEventListener('click', closeCropModal);
+            document.getElementById('btnApplyCrop').addEventListener('click', () => {
+                if (!cropper) return;
+                
+                // 最大400x400にリサイズしながら切り抜き
+                const canvas = cropper.getCroppedCanvas({
+                    maxWidth: 400,
+                    maxHeight: 400,
+                    fillColor: '#ffffff' // 透過部分を白に塗りつぶしてJPEG化可能に
+                });
+                
+                // JPEG形式で圧縮（画質0.8）
+                tempImageBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                document.getElementById('modalNodeImg').src = tempImageBase64;
+                
+                closeCropModal();
+            });
             
             document.getElementById('btnSaveEdge').addEventListener('click', saveEdge);
             document.getElementById('btnDeleteEdge').addEventListener('click', deleteEdge);
@@ -1227,14 +1261,58 @@
             }, 200);
         }
 
+        let cropper = null;
+
+        function closeCropModal() {
+            const overlay = document.getElementById('cropOverlay');
+            const modal = document.getElementById('cropModal');
+            modal.classList.add('scale-95');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                modal.classList.add('hidden');
+                if (cropper) { cropper.destroy(); cropper = null; }
+            }, 200);
+        }
+
         function handleImageUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = event => {
-                tempImageBase64 = event.target.result;
-                document.getElementById('modalNodeImg').src = tempImageBase64;
-                imageUploader.value = ''; 
+                const cropTargetImg = document.getElementById('cropTargetImg');
+                cropTargetImg.src = event.target.result;
+                
+                // クロップモーダルを表示
+                const overlay = document.getElementById('cropOverlay');
+                const modal = document.getElementById('cropModal');
+                overlay.classList.remove('hidden');
+                modal.classList.remove('hidden');
+                // アニメーションのため少し待機
+                setTimeout(() => { overlay.classList.remove('opacity-0'); modal.classList.remove('scale-95'); }, 10);
+
+                if (cropper) {
+                    cropper.destroy();
+                }
+                
+                // 画像が再描画された後にCropperを初期化
+                setTimeout(() => {
+                    cropper = new Cropper(cropTargetImg, {
+                        aspectRatio: 1, // アイコン用に1:1の正方形に固定
+                        viewMode: 1,
+                        dragMode: 'move', // 画像自体をドラッグして移動できるようにする
+                        autoCropArea: 0.9,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                    });
+                }, 100);
+                
+                document.getElementById('imageUploader').value = ''; 
             };
             reader.readAsDataURL(file);
         }
