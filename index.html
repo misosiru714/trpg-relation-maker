@@ -396,6 +396,29 @@
                 <label class="block text-sm font-semibold text-slate-600 mb-1">色</label>
                 <div class="flex gap-2 flex-wrap" id="memoColorSelector"></div>
             </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">横揃え</label>
+                    <select id="modalMemoAlignX" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm">
+                        <option value="left">左</option>
+                        <option value="center">中央</option>
+                        <option value="right">右</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">縦揃え</label>
+                    <select id="modalMemoAlignY" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm">
+                        <option value="top">上</option>
+                        <option value="center">中央</option>
+                        <option value="bottom">下</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">文字サイズ</label>
+                <input id="modalMemoFontSize" type="range" min="8" max="32" step="1" value="13" class="w-full">
+                <div class="text-xs text-slate-500 mt-1">サイズ: <span id="modalMemoFontSizeLabel">13</span>px</div>
+            </div>
             <div class="flex gap-4">
                 <div class="flex-1">
                     <label class="block text-sm font-semibold text-slate-600 mb-1">角の数</label>
@@ -661,6 +684,9 @@
                         if(!m.color) m.color = '#fef3c7';
                         if(m.corners === undefined) m.corners = 4;
                         if(m.roundness === undefined) m.roundness = 10;
+                        if(m.alignX === undefined) m.alignX = 'center';
+                        if(m.alignY === undefined) m.alignY = 'center';
+                        if(m.fontSize === undefined) m.fontSize = 13;
                         if(m.width === undefined) m.width = 200;
                         if(m.height === undefined) m.height = 140;
                     });
@@ -1396,7 +1422,10 @@
                 text: 'メモ',
                 color: '#fef3c7',
                 corners: 4,
-                roundness: 10
+                roundness: 10,
+                alignX: 'center',
+                alignY: 'center',
+                fontSize: 13
             });
             renderMemos();
         }
@@ -1481,8 +1510,11 @@
                 el.style.clipPath = clip;
                 el.style.webkitClipPath = clip;
                 el.style.display = 'flex';
-                el.style.alignItems = 'flex-start';
-                el.style.justifyContent = 'flex-start';
+                const alignX = m.alignX || 'center';
+                const alignY = m.alignY || 'center';
+                el.style.alignItems = alignX === 'left' ? 'flex-start' : alignX === 'right' ? 'flex-end' : 'center';
+                el.style.justifyContent = alignY === 'top' ? 'flex-start' : alignY === 'bottom' ? 'flex-end' : 'center';
+                el.style.textAlign = alignX;
                 el.style.padding = '10px';
                 el.style.boxSizing = 'border-box';
                 el.style.userSelect = 'none';
@@ -1509,7 +1541,7 @@
                 text.style.overflow = 'hidden';
                 text.style.whiteSpace = 'pre-wrap';
                 text.style.wordBreak = 'break-word';
-                text.style.fontSize = '13px';
+                text.style.fontSize = `${m.fontSize || 13}px`;
                 text.style.color = '#1f2937';
                 text.style.pointerEvents = 'none';
                 text.innerText = m.text;
@@ -1778,6 +1810,9 @@
             });
             document.getElementById('modalMemoRoundness').addEventListener('input', (e) => {
                 document.getElementById('modalMemoRoundnessLabel').innerText = e.target.value;
+            });
+            document.getElementById('modalMemoFontSize').addEventListener('input', (e) => {
+                document.getElementById('modalMemoFontSizeLabel').innerText = e.target.value;
             });
 
             // 背景設定イベント
@@ -2061,6 +2096,10 @@
             editingMemoId = id;
             const m = state.memos.find(x => x.id === id);
             document.getElementById('modalMemoText').value = m.text;
+            document.getElementById('modalMemoAlignX').value = m.alignX || 'center';
+            document.getElementById('modalMemoAlignY').value = m.alignY || 'center';
+            document.getElementById('modalMemoFontSize').value = m.fontSize || 13;
+            document.getElementById('modalMemoFontSizeLabel').innerText = m.fontSize || 13;
             document.getElementById('modalMemoCorners').value = m.corners;
             document.getElementById('modalMemoCornersLabel').innerText = m.corners;
             document.getElementById('modalMemoRoundness').value = m.roundness;
@@ -2073,6 +2112,9 @@
             const m = state.memos.find(x => x.id === editingMemoId);
             if (m) {
                 m.text = document.getElementById('modalMemoText').value;
+                m.alignX = document.getElementById('modalMemoAlignX').value;
+                m.alignY = document.getElementById('modalMemoAlignY').value;
+                m.fontSize = parseInt(document.getElementById('modalMemoFontSize').value, 10) || 13;
                 m.color = editingMemoColor;
                 m.corners = parseInt(document.getElementById('modalMemoCorners').value, 10) || 4;
                 m.roundness = parseInt(document.getElementById('modalMemoRoundness').value, 10) || 0;
