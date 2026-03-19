@@ -507,10 +507,8 @@
             draggedLabelId: null,
             draggedGroupId: null,
             resizingGroupId: null,
-            resizingGroupStart: null,
             resizingMemoId: null,
             resizingMemoCorner: null,
-            resizingMemoStart: null,
             labelDragStartX: 0,
             labelDragStartY: 0,
             labelInitialOffset: { x: 0, y: 0 },
@@ -1087,42 +1085,41 @@
 
             if (state.resizingGroupId) {
                 const group = state.groups.find(g => g.id === state.resizingGroupId);
-                if (!group || !state.resizingGroupStart) return;
-                const start = state.resizingGroupStart;
-                const dx = localPos.x - start.x;
-                const dy = localPos.y - start.y;
-                group.width = Math.max(100, start.width + dx);
-                group.height = Math.max(50, start.height + dy);
+                group.width = Math.max(100, localPos.x - group.x);
+                group.height = Math.max(50, localPos.y - group.y);
                 renderGroups();
                 return;
             }
 
             if (state.resizingMemoId) {
                 const memo = state.memos.find(m => m.id === state.resizingMemoId);
-                const start = state.resizingMemoStart;
-                if (!memo || !start) return;
+                if (!memo) return;
                 const minW = 120;
                 const minH = 80;
-                const dx = localPos.x - start.mouseX;
-                const dy = localPos.y - start.mouseY;
+                const maxX = memo.x + memo.width;
+                const maxY = memo.y + memo.height;
                 const corner = state.resizingMemoCorner || 'br';
 
                 if (corner === 'br') {
-                    memo.width = Math.max(minW, start.width + dx);
-                    memo.height = Math.max(minH, start.height + dy);
+                    memo.width = Math.max(minW, localPos.x - memo.x);
+                    memo.height = Math.max(minH, localPos.y - memo.y);
                 } else if (corner === 'bl') {
-                    memo.x = start.x + Math.min(dx, start.width - minW);
-                    memo.width = Math.max(minW, start.width - dx);
-                    memo.height = Math.max(minH, start.height + dy);
+                    const newX = Math.min(localPos.x, maxX - minW);
+                    memo.width = Math.max(minW, maxX - newX);
+                    memo.x = newX;
+                    memo.height = Math.max(minH, localPos.y - memo.y);
                 } else if (corner === 'tr') {
-                    memo.y = start.y + Math.min(dy, start.height - minH);
-                    memo.height = Math.max(minH, start.height - dy);
-                    memo.width = Math.max(minW, start.width + dx);
+                    const newY = Math.min(localPos.y, maxY - minH);
+                    memo.height = Math.max(minH, maxY - newY);
+                    memo.y = newY;
+                    memo.width = Math.max(minW, localPos.x - memo.x);
                 } else if (corner === 'tl') {
-                    memo.x = start.x + Math.min(dx, start.width - minW);
-                    memo.y = start.y + Math.min(dy, start.height - minH);
-                    memo.width = Math.max(minW, start.width - dx);
-                    memo.height = Math.max(minH, start.height - dy);
+                    const newX = Math.min(localPos.x, maxX - minW);
+                    const newY = Math.min(localPos.y, maxY - minH);
+                    memo.width = Math.max(minW, maxX - newX);
+                    memo.height = Math.max(minH, maxY - newY);
+                    memo.x = newX;
+                    memo.y = newY;
                 }
 
                 renderMemos();
@@ -1156,9 +1153,9 @@
             }
 
             if (state.draggedWaypoint) {
-                const { edge, index, offsetX = 0, offsetY = 0 } = state.draggedWaypoint;
-                edge.waypoints[index].x = localPos.x - offsetX;
-                edge.waypoints[index].y = localPos.y - offsetY;
+                const { edge, index } = state.draggedWaypoint;
+                edge.waypoints[index].x = localPos.x;
+                edge.waypoints[index].y = localPos.y;
                 renderEdges();
                 return;
             }
@@ -1190,10 +1187,8 @@
             state.draggedGroupId = null;
             state.draggedMemoId = null;
             state.resizingGroupId = null;
-            state.resizingGroupStart = null;
             state.resizingMemoId = null;
             state.resizingMemoCorner = null;
-            state.resizingMemoStart = null;
         }
 
         // --- モード切替 ---
@@ -1377,8 +1372,6 @@
                 resize.addEventListener('mousedown', e => {
                     e.stopPropagation();
                     state.resizingGroupId = g.id;
-                    const lp = getLocalPos(e.clientX, e.clientY);
-                    state.resizingGroupStart = { x: lp.x, y: lp.y, width: g.width, height: g.height };
                 });
 
                 box.appendChild(label);
@@ -1537,15 +1530,6 @@
                         e.stopPropagation();
                         state.resizingMemoId = m.id;
                         state.resizingMemoCorner = corner;
-                        const lp = getLocalPos(e.clientX, e.clientY);
-                        state.resizingMemoStart = {
-                            x: m.x,
-                            y: m.y,
-                            width: m.width,
-                            height: m.height,
-                            mouseX: lp.x,
-                            mouseY: lp.y
-                        };
                     });
                     el.appendChild(resize);
                 });
@@ -1694,16 +1678,7 @@
                     edge.waypoints.forEach((wp, index) => {
                         const h = document.createElement('div');
                         h.className = 'waypoint-handle'; h.style.left = `${wp.x}px`; h.style.top = `${wp.y}px`;
-                        h.addEventListener('mousedown', e => {
-                            e.stopPropagation();
-                            const lp = getLocalPos(e.clientX, e.clientY);
-                            state.draggedWaypoint = {
-                                edge,
-                                index,
-                                offsetX: lp.x - wp.x,
-                                offsetY: lp.y - wp.y
-                            };
-                        });
+                        h.addEventListener('mousedown', e => { e.stopPropagation(); state.draggedWaypoint = { edge, index }; });
                         h.addEventListener('dblclick', e => { e.stopPropagation(); edge.waypoints.splice(index, 1); commitChange(); renderEdges(); });
                         elementsLayer.appendChild(h);
                     });
@@ -1714,8 +1689,7 @@
                         addH.addEventListener('mousedown', e => {
                             e.stopPropagation();
                             edge.waypoints.splice(i, 0, {x: cx, y: cy});
-                            const lp = getLocalPos(e.clientX, e.clientY);
-                            state.draggedWaypoint = { edge, index: i, offsetX: lp.x - cx, offsetY: lp.y - cy };
+                            state.draggedWaypoint = { edge, index: i };
                             renderEdges();
                         });
                         elementsLayer.appendChild(addH);
