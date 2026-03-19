@@ -69,14 +69,6 @@
             text-align: center;
             width: 100%;
             color: #333;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-
-            /* 安定した縦中央配置のために高さを固定気味にする */
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 20px;
-            line-height: 1;
         }
 
         .node-status {
@@ -114,11 +106,6 @@
             pointer-events: auto;
             cursor: grab;
             user-select: none;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-
-            /* 安定した縦中央配置のために高さを固定気味にする */
-            min-height: 18px;
-            line-height: 1;
         }
         .edge-label:active { cursor: grabbing; }
 
@@ -404,33 +391,6 @@
             </div>
         </div>
 
-        <!-- 画像出力設定モーダル -->
-        <div id="exportModal" class="bg-white p-6 rounded-xl shadow-2xl w-80 hidden flex-col gap-4 transform scale-95 transition-transform duration-200">
-            <h2 class="text-lg font-bold text-slate-800">画像出力設定</h2>
-            <div>
-                <label class="block text-sm font-semibold text-slate-600 mb-2">形式</label>
-                <div class="flex gap-3">
-                    <label class="flex items-center gap-2 text-sm">
-                        <input type="radio" name="exportFormat" value="png" checked>
-                        <span>PNG</span>
-                    </label>
-                    <label class="flex items-center gap-2 text-sm">
-                        <input type="radio" name="exportFormat" value="jpeg">
-                        <span>JPEG</span>
-                    </label>
-                </div>
-            </div>
-            <div id="jpegOptions" class="hidden">
-                <label class="block text-sm font-semibold text-slate-600 mb-1">JPEG品質</label>
-                <input id="exportJpegQuality" type="range" min="0.3" max="1" step="0.05" value="0.85" class="w-full">
-                <div class="text-xs text-slate-500 mt-1">品質: <span id="exportJpegQualityLabel">0.85</span></div>
-            </div>
-            <div class="flex justify-between mt-2 pt-4 border-t border-slate-100">
-                <button class="btnCancel text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-bold transition-colors">キャンセル</button>
-                <button id="btnExportConfirm" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm">出力</button>
-            </div>
-        </div>
-
     </div>
 
     <!-- クロップ用オーバーレイ -->
@@ -449,7 +409,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.0/dist/html-to-image.min.js"></script>
     <script>
         // --- 状態管理 ---
         const LOCAL_STORAGE_KEY = 'trpg_diagram_data_v3';
@@ -489,10 +448,6 @@
         let tempImageBase64 = null;
         let editingEdgeColor = '';
         let editingGroupColor = '';
-
-        // 画像出力設定
-        let exportFormat = 'png';
-        let exportJpegQuality = 0.85;
 
         const colorPresets = [
             { value: '#94a3b8', class: 'bg-slate-400' },
@@ -670,7 +625,7 @@
             document.getElementById('btnExportJson').addEventListener('click', exportToJson);
             document.getElementById('btnImportJson').addEventListener('click', () => jsonUploader.click());
             jsonUploader.addEventListener('change', importFromJson);
-            document.getElementById('btnExportImage').addEventListener('click', openExportModal);
+            document.getElementById('btnExportImage').addEventListener('click', exportToImage);
             
             document.getElementById('btnBgSettings').addEventListener('click', () => openModalUI('bgModal'));
 
@@ -791,151 +746,73 @@
             };
         }
 
-        async function exportToImage(options = {}) {
-            const format = options.format || exportFormat || 'png';
-            const quality = typeof options.quality === 'number' ? options.quality : exportJpegQuality;
+        async function exportToImage() {
             const btn = document.getElementById('btnExportImage');
             const originalText = btn.innerHTML;
             btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>生成中`;
             btn.disabled = true;
 
             try {
-                // フォントが読み込み終わるまで待つ（描画位置ずれ対策）
-                if (document.fonts && document.fonts.ready) await document.fonts.ready;
                 const bbox = calculateBoundingBox();
                 const ws = document.getElementById('workspace');
 
-                // html-to-image での出力を優先。標準的にテキストの再現性が高い。
-                let dataUrl;
-                if (window.htmlToImage && typeof window.htmlToImage.toPng === 'function') {
-                    const exportContainer = document.createElement('div');
-                    exportContainer.style.position = 'fixed';
-                    exportContainer.style.top = '0';
-                    exportContainer.style.left = '0';
-                    exportContainer.style.width = `${bbox.width}px`;
-                    exportContainer.style.height = `${bbox.height}px`;
-                    exportContainer.style.overflow = 'hidden';
-                    exportContainer.style.pointerEvents = 'none';
-                    exportContainer.style.opacity = '0';
-                    exportContainer.style.zIndex = '-9999';
-
-                    const clonedWs = ws.cloneNode(true);
-                    // 同じIDが複数存在すると不具合になる可能性があるため、export用の複製ではIDを削除
-                    clonedWs.removeAttribute('id');
-                    const clonedVp = clonedWs.querySelector('#viewport');
-                    if (clonedVp) clonedVp.removeAttribute('id');
-
-                    clonedWs.style.width = `${bbox.width}px`;
-                    clonedWs.style.height = `${bbox.height}px`;
-                    clonedWs.style.position = 'relative';
-                    clonedWs.style.overflow = 'hidden';
-                    clonedWs.style.backgroundColor = state.background.color;
-                    clonedWs.style.backgroundPosition = `${-bbox.x}px ${-bbox.y}px`;
-
-                    const hex = state.background.color.replace('#', '');
-                    const r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
-                    const isDark = (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128;
-                    const lineCol = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-
-                    if (state.background.type === 'dot') {
-                        clonedWs.style.backgroundImage = `radial-gradient(${lineCol} 1.5px, transparent 1.5px)`;
-                        clonedWs.style.backgroundSize = `24px 24px`;
-                    } else if (state.background.type === 'grid') {
-                        clonedWs.style.backgroundImage = `linear-gradient(${lineCol} 1px, transparent 1px), linear-gradient(90deg, ${lineCol} 1px, transparent 1px)`;
-                        clonedWs.style.backgroundSize = `40px 40px`;
-                    } else {
-                        clonedWs.style.backgroundImage = 'none';
-                    }
-
-                    if (clonedVp) {
-                        clonedVp.style.transform = `translate(${-bbox.x}px, ${-bbox.y}px) scale(1)`;
+                const canvas = await html2canvas(ws, {
+                    width: bbox.width,
+                    height: bbox.height,
+                    useCORS: true,
+                    scale: 2, // 2倍の解像度で綺麗に出力
+                    backgroundColor: state.background.color,
+                    windowWidth: bbox.width,
+                    windowHeight: bbox.height,
+                    logging: false,
+                    onclone: (clonedDoc) => {
+                        const clonedWs = clonedDoc.getElementById('workspace');
+                        const clonedVp = clonedDoc.getElementById('viewport');
+                        
+                        // キャプチャ用にサイズと位置を固定
+                        clonedWs.className = ''; 
+                        clonedWs.style.width = `${bbox.width}px`;
+                        clonedWs.style.height = `${bbox.height}px`;
+                        clonedWs.style.position = 'relative';
+                        clonedWs.style.overflow = 'hidden';
+                        clonedWs.style.backgroundColor = state.background.color;
+                        
+                        // SVGなどの見切れを防ぐために表示領域を極端に広げる
                         clonedVp.style.width = '20000px';
                         clonedVp.style.height = '20000px';
-                    }
+                        
+                        // 視点をバウンディングボックスの左上にリセット
+                        clonedVp.style.transform = `translate(${-bbox.x}px, ${-bbox.y}px) scale(1)`;
+                        
+                        // 背景のドット・方眼パターンを再描画
+                        clonedWs.style.backgroundPosition = `${-bbox.x}px ${-bbox.y}px`;
+                        const hex = state.background.color.replace('#', '');
+                        const r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
+                        const isDark = (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128;
+                        const lineCol = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
-                    clonedWs.querySelectorAll('.waypoint-add-handle, .waypoint-handle, .group-resize-handle, .node > button, .edge-label > button').forEach(el => el.remove());
-
-                    exportContainer.appendChild(clonedWs);
-                    document.body.appendChild(exportContainer);
-
-                    if (format === 'jpeg') {
-                        dataUrl = await window.htmlToImage.toJpeg(clonedWs, {
-                            width: bbox.width,
-                            height: bbox.height,
-                            pixelRatio: window.devicePixelRatio || 1,
-                            quality,
-                            backgroundColor: state.background.color,
-                        });
-                    } else {
-                        dataUrl = await window.htmlToImage.toPng(clonedWs, {
-                            width: bbox.width,
-                            height: bbox.height,
-                            pixelRatio: window.devicePixelRatio || 1,
-                            backgroundColor: state.background.color,
-                        });
-                    }
-
-                    document.body.removeChild(exportContainer);
-                } else {
-                    const canvas = await html2canvas(ws, {
-                        width: bbox.width,
-                        height: bbox.height,
-                        useCORS: true,
-                        scale: window.devicePixelRatio || 1,
-                        backgroundColor: state.background.color,
-                        windowWidth: bbox.width,
-                        windowHeight: bbox.height,
-                        logging: false,
-                        onclone: (clonedDoc) => {
-                            const clonedWs = clonedDoc.getElementById('workspace');
-                            const clonedVp = clonedDoc.getElementById('viewport');
-
-                            clonedWs.className = '';
-                            clonedWs.style.width = `${bbox.width}px`;
-                            clonedWs.style.height = `${bbox.height}px`;
-                            clonedWs.style.position = 'relative';
-                            clonedWs.style.overflow = 'hidden';
-                            clonedWs.style.backgroundColor = state.background.color;
-
-                            clonedVp.style.width = '20000px';
-                            clonedVp.style.height = '20000px';
-                            clonedVp.style.transform = `translate(${-bbox.x}px, ${-bbox.y}px) scale(1)`;
-
-                            clonedWs.style.backgroundPosition = `${-bbox.x}px ${-bbox.y}px`;
-                            const hex = state.background.color.replace('#', '');
-                            const r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
-                            const isDark = (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128;
-                            const lineCol = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-
-                            if (state.background.type === 'dot') {
-                                clonedWs.style.backgroundImage = `radial-gradient(${lineCol} 1.5px, transparent 1.5px)`;
-                                clonedWs.style.backgroundSize = `24px 24px`;
-                            } else if (state.background.type === 'grid') {
-                                clonedWs.style.backgroundImage = `linear-gradient(${lineCol} 1px, transparent 1px), linear-gradient(90deg, ${lineCol} 1px, transparent 1px)`;
-                                clonedWs.style.backgroundSize = `40px 40px`;
-                            } else {
-                                clonedWs.style.backgroundImage = 'none';
-                            }
-
-                            clonedDoc.querySelectorAll('.waypoint-add-handle, .waypoint-handle, .group-resize-handle, .node > button, .edge-label > button').forEach(el => el.style.display = 'none');
+                        if (state.background.type === 'dot') {
+                            clonedWs.style.backgroundImage = `radial-gradient(${lineCol} 1.5px, transparent 1.5px)`;
+                            clonedWs.style.backgroundSize = `24px 24px`;
+                        } else if (state.background.type === 'grid') {
+                            clonedWs.style.backgroundImage = `linear-gradient(${lineCol} 1px, transparent 1px), linear-gradient(90deg, ${lineCol} 1px, transparent 1px)`;
+                            clonedWs.style.backgroundSize = `40px 40px`;
+                        } else {
+                            clonedWs.style.backgroundImage = 'none';
                         }
-                    });
-
-                    if (format === 'jpeg') {
-                        dataUrl = canvas.toDataURL('image/jpeg', quality);
-                    } else {
-                        dataUrl = canvas.toDataURL('image/png');
+                        
+                        // 画像出力時には不要なUI（ハンドル、編集ボタンなど）を隠す
+                        clonedDoc.querySelectorAll('.waypoint-add-handle, .waypoint-handle, .group-resize-handle, .node > button, .edge-label > button').forEach(el => el.style.display = 'none');
                     }
-                }
+                });
 
                 // ダウンロード処理
                 const link = document.createElement('a');
                 const dateStr = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
-                const ext = format === 'jpeg' ? 'jpg' : 'png';
-                link.download = `TRPG_相関図_${dateStr}.${ext}`;
-                link.href = dataUrl;
+                link.download = `TRPG_相関図_${dateStr}.png`;
+                link.href = canvas.toDataURL('image/png');
                 link.click();
-
+                
             } catch (e) {
                 console.error(e);
                 alert('画像化に失敗しました。');
@@ -1499,50 +1376,11 @@
             document.getElementById('modalEdgeWidth').addEventListener('input', e => {
                 document.getElementById('valEdgeWidth').innerText = e.target.value;
             });
-
-            // 画像出力設定モーダルのイベント
-            const exportFormatRadios = document.querySelectorAll('input[name="exportFormat"]');
-            exportFormatRadios.forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    exportFormat = e.target.value;
-                    updateExportModalUI();
-                });
-            });
-
-            const exportQualityInput = document.getElementById('exportJpegQuality');
-            exportQualityInput.addEventListener('input', (e) => {
-                exportJpegQuality = parseFloat(e.target.value);
-                document.getElementById('exportJpegQualityLabel').innerText = exportJpegQuality.toFixed(2);
-            });
-
-            document.getElementById('btnExportConfirm').addEventListener('click', () => {
-                closeModal();
-                exportToImage({ format: exportFormat, quality: exportJpegQuality });
-            });
-        }
-
-        function openExportModal() {
-            const radios = document.querySelectorAll('input[name="exportFormat"]');
-            radios.forEach(r => r.checked = r.value === exportFormat);
-            const qualityInput = document.getElementById('exportJpegQuality');
-            qualityInput.value = exportJpegQuality;
-            document.getElementById('exportJpegQualityLabel').innerText = exportJpegQuality.toFixed(2);
-            updateExportModalUI();
-            openModalUI('exportModal');
-        }
-
-        function updateExportModalUI() {
-            const jpegOptions = document.getElementById('jpegOptions');
-            if (exportFormat === 'jpeg') {
-                jpegOptions.classList.remove('hidden');
-            } else {
-                jpegOptions.classList.add('hidden');
-            }
         }
 
         function openModalUI(modalId) {
             const overlay = document.getElementById('modalOverlay');
-            ['nodeModal', 'edgeModal', 'groupModal', 'bgModal', 'exportModal'].forEach(id => {
+            ['nodeModal', 'edgeModal', 'groupModal', 'bgModal'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
             const target = document.getElementById(modalId);
@@ -1553,7 +1391,7 @@
 
         function closeModal() {
             const overlay = document.getElementById('modalOverlay');
-            ['nodeModal', 'edgeModal', 'groupModal', 'bgModal', 'exportModal'].forEach(id => {
+            ['nodeModal', 'edgeModal', 'groupModal', 'bgModal'].forEach(id => {
                 document.getElementById(id).classList.add('scale-95');
             });
             overlay.classList.add('opacity-0');

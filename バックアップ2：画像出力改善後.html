@@ -404,33 +404,6 @@
             </div>
         </div>
 
-        <!-- 画像出力設定モーダル -->
-        <div id="exportModal" class="bg-white p-6 rounded-xl shadow-2xl w-80 hidden flex-col gap-4 transform scale-95 transition-transform duration-200">
-            <h2 class="text-lg font-bold text-slate-800">画像出力設定</h2>
-            <div>
-                <label class="block text-sm font-semibold text-slate-600 mb-2">形式</label>
-                <div class="flex gap-3">
-                    <label class="flex items-center gap-2 text-sm">
-                        <input type="radio" name="exportFormat" value="png" checked>
-                        <span>PNG</span>
-                    </label>
-                    <label class="flex items-center gap-2 text-sm">
-                        <input type="radio" name="exportFormat" value="jpeg">
-                        <span>JPEG</span>
-                    </label>
-                </div>
-            </div>
-            <div id="jpegOptions" class="hidden">
-                <label class="block text-sm font-semibold text-slate-600 mb-1">JPEG品質</label>
-                <input id="exportJpegQuality" type="range" min="0.3" max="1" step="0.05" value="0.85" class="w-full">
-                <div class="text-xs text-slate-500 mt-1">品質: <span id="exportJpegQualityLabel">0.85</span></div>
-            </div>
-            <div class="flex justify-between mt-2 pt-4 border-t border-slate-100">
-                <button class="btnCancel text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-bold transition-colors">キャンセル</button>
-                <button id="btnExportConfirm" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm">出力</button>
-            </div>
-        </div>
-
     </div>
 
     <!-- クロップ用オーバーレイ -->
@@ -489,10 +462,6 @@
         let tempImageBase64 = null;
         let editingEdgeColor = '';
         let editingGroupColor = '';
-
-        // 画像出力設定
-        let exportFormat = 'png';
-        let exportJpegQuality = 0.85;
 
         const colorPresets = [
             { value: '#94a3b8', class: 'bg-slate-400' },
@@ -670,7 +639,7 @@
             document.getElementById('btnExportJson').addEventListener('click', exportToJson);
             document.getElementById('btnImportJson').addEventListener('click', () => jsonUploader.click());
             jsonUploader.addEventListener('change', importFromJson);
-            document.getElementById('btnExportImage').addEventListener('click', openExportModal);
+            document.getElementById('btnExportImage').addEventListener('click', exportToImage);
             
             document.getElementById('btnBgSettings').addEventListener('click', () => openModalUI('bgModal'));
 
@@ -791,9 +760,7 @@
             };
         }
 
-        async function exportToImage(options = {}) {
-            const format = options.format || exportFormat || 'png';
-            const quality = typeof options.quality === 'number' ? options.quality : exportJpegQuality;
+        async function exportToImage() {
             const btn = document.getElementById('btnExportImage');
             const originalText = btn.innerHTML;
             btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>生成中`;
@@ -858,22 +825,12 @@
                     exportContainer.appendChild(clonedWs);
                     document.body.appendChild(exportContainer);
 
-                    if (format === 'jpeg') {
-                        dataUrl = await window.htmlToImage.toJpeg(clonedWs, {
-                            width: bbox.width,
-                            height: bbox.height,
-                            pixelRatio: window.devicePixelRatio || 1,
-                            quality,
-                            backgroundColor: state.background.color,
-                        });
-                    } else {
-                        dataUrl = await window.htmlToImage.toPng(clonedWs, {
-                            width: bbox.width,
-                            height: bbox.height,
-                            pixelRatio: window.devicePixelRatio || 1,
-                            backgroundColor: state.background.color,
-                        });
-                    }
+                    dataUrl = await window.htmlToImage.toPng(clonedWs, {
+                        width: bbox.width,
+                        height: bbox.height,
+                        pixelRatio: window.devicePixelRatio || 1,
+                        backgroundColor: state.background.color,
+                    });
 
                     document.body.removeChild(exportContainer);
                 } else {
@@ -921,18 +878,13 @@
                         }
                     });
 
-                    if (format === 'jpeg') {
-                        dataUrl = canvas.toDataURL('image/jpeg', quality);
-                    } else {
-                        dataUrl = canvas.toDataURL('image/png');
-                    }
+                    dataUrl = canvas.toDataURL('image/png');
                 }
 
                 // ダウンロード処理
                 const link = document.createElement('a');
                 const dateStr = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
-                const ext = format === 'jpeg' ? 'jpg' : 'png';
-                link.download = `TRPG_相関図_${dateStr}.${ext}`;
+                link.download = `TRPG_相関図_${dateStr}.png`;
                 link.href = dataUrl;
                 link.click();
 
@@ -1499,50 +1451,11 @@
             document.getElementById('modalEdgeWidth').addEventListener('input', e => {
                 document.getElementById('valEdgeWidth').innerText = e.target.value;
             });
-
-            // 画像出力設定モーダルのイベント
-            const exportFormatRadios = document.querySelectorAll('input[name="exportFormat"]');
-            exportFormatRadios.forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    exportFormat = e.target.value;
-                    updateExportModalUI();
-                });
-            });
-
-            const exportQualityInput = document.getElementById('exportJpegQuality');
-            exportQualityInput.addEventListener('input', (e) => {
-                exportJpegQuality = parseFloat(e.target.value);
-                document.getElementById('exportJpegQualityLabel').innerText = exportJpegQuality.toFixed(2);
-            });
-
-            document.getElementById('btnExportConfirm').addEventListener('click', () => {
-                closeModal();
-                exportToImage({ format: exportFormat, quality: exportJpegQuality });
-            });
-        }
-
-        function openExportModal() {
-            const radios = document.querySelectorAll('input[name="exportFormat"]');
-            radios.forEach(r => r.checked = r.value === exportFormat);
-            const qualityInput = document.getElementById('exportJpegQuality');
-            qualityInput.value = exportJpegQuality;
-            document.getElementById('exportJpegQualityLabel').innerText = exportJpegQuality.toFixed(2);
-            updateExportModalUI();
-            openModalUI('exportModal');
-        }
-
-        function updateExportModalUI() {
-            const jpegOptions = document.getElementById('jpegOptions');
-            if (exportFormat === 'jpeg') {
-                jpegOptions.classList.remove('hidden');
-            } else {
-                jpegOptions.classList.add('hidden');
-            }
         }
 
         function openModalUI(modalId) {
             const overlay = document.getElementById('modalOverlay');
-            ['nodeModal', 'edgeModal', 'groupModal', 'bgModal', 'exportModal'].forEach(id => {
+            ['nodeModal', 'edgeModal', 'groupModal', 'bgModal'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
             const target = document.getElementById(modalId);
@@ -1553,7 +1466,7 @@
 
         function closeModal() {
             const overlay = document.getElementById('modalOverlay');
-            ['nodeModal', 'edgeModal', 'groupModal', 'bgModal', 'exportModal'].forEach(id => {
+            ['nodeModal', 'edgeModal', 'groupModal', 'bgModal'].forEach(id => {
                 document.getElementById(id).classList.add('scale-95');
             });
             overlay.classList.add('opacity-0');
