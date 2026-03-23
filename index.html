@@ -80,6 +80,20 @@
             line-height: 1;
         }
 
+        @keyframes criticalPulse {
+            0%, 100% { opacity: 0.18; }
+            50% { opacity: 0.56; }
+        }
+
+        @keyframes criticalBorderPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.34), 0 0 18px rgba(220, 38, 38, 0.18);
+            }
+            50% {
+                box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.72), 0 0 24px rgba(239, 68, 68, 0.42);
+            }
+        }
+
         .node-status {
             position: absolute;
             top: -10px;
@@ -123,6 +137,23 @@
         .node-image-container.status-missing {
             border-color: #94a3b8;
             box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.35), 0 6px 14px rgba(100, 116, 139, 0.2);
+        }
+        .node-image-container.status-critical .node-img {
+            filter: grayscale(1) contrast(1.12) brightness(0.72);
+        }
+        .node-image-container.status-critical {
+            border-color: #ef4444;
+            animation: criticalBorderPulse 1.05s ease-in-out infinite;
+        }
+        .node-image-container.status-critical::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(127, 29, 29, 0.08)),
+                radial-gradient(circle at 50% 50%, rgba(248, 113, 113, 0.48), transparent 60%);
+            animation: criticalPulse 0.9s ease-in-out infinite;
+            pointer-events: none;
         }
         .node-image-container.status-injured .node-img {
             filter: saturate(0.58) brightness(0.92) contrast(1.02) sepia(0.18);
@@ -249,6 +280,59 @@
             line-height: 1;
         }
         .edge-label:active { cursor: grabbing; }
+
+        .context-menu {
+            position: fixed;
+            min-width: 190px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            border-radius: 14px;
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+            padding: 8px;
+            z-index: 80;
+            backdrop-filter: blur(10px);
+        }
+        .context-menu.hidden { display: none; }
+        .context-menu-button {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            border-radius: 10px;
+            padding: 9px 10px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .context-menu-button:hover {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        .context-menu-button.danger {
+            color: #b91c1c;
+        }
+        .context-menu-button.danger:hover {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+        .context-menu-button:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+        .context-menu-button:disabled:hover {
+            background: transparent;
+            color: inherit;
+        }
+        .context-menu-separator {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 6px 4px;
+        }
 
         .waypoint-handle {
             position: absolute;
@@ -441,6 +525,7 @@
                 <label class="block text-sm font-semibold text-slate-600 mb-1">状態</label>
                 <select id="modalNodeStatus" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 bg-white">
                     <option value="normal">通常</option>
+                    <option value="critical">瀕死</option>
                     <option value="dead">死亡</option>
                     <option value="missing">行方不明</option>
                     <option value="injured">重傷</option>
@@ -448,6 +533,26 @@
                     <option value="insane">発狂</option>
                     <option value="hidden">秘匿</option>
                 </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <label class="flex items-center gap-2 text-sm font-semibold text-slate-600 cursor-pointer">
+                    <input type="checkbox" id="modalShowStatusBadge" class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+                    <span>バッジを表示</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm font-semibold text-slate-600 cursor-pointer">
+                    <input type="checkbox" id="modalShowNameLabel" class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+                    <span>名前ラベルを表示</span>
+                </label>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">ラベル背景色</label>
+                    <input type="color" id="modalNodeLabelBg" class="w-full h-10 rounded cursor-pointer border border-slate-300 p-1 bg-white" value="#ffffff">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">ラベル文字色</label>
+                    <input type="color" id="modalNodeLabelColor" class="w-full h-10 rounded cursor-pointer border border-slate-300 p-1 bg-white" value="#333333">
+                </div>
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-600 mb-1">詳細メモ (秘匿・設定など)</label>
@@ -643,23 +748,27 @@
         </div>
     </div>
 
+    <div id="contextMenu" class="context-menu hidden"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.0/dist/html-to-image.min.js"></script>
     <script>
         const NODE_STATUS_OPTIONS = {
-            normal: { label: '通常', badge: '' },
-            dead: { label: '死亡', badge: '死亡' },
-            missing: { label: '行方不明', badge: '不明' },
-            injured: { label: '重傷', badge: '重傷' },
-            restrained: { label: '拘束', badge: '拘束' },
-            insane: { label: '発狂', badge: '発狂' },
-            hidden: { label: '秘匿', badge: '秘匿' }
+            normal: { label: '通常', badge: '', badgeBg: '#ffffff', badgeColor: '#334155', badgeBorder: '#e2e8f0' },
+            critical: { label: '瀕死', badge: '瀕死', badgeBg: '#7f1d1d', badgeColor: '#fef2f2', badgeBorder: '#ef4444' },
+            dead: { label: '死亡', badge: '死亡', badgeBg: '#7f1d1d', badgeColor: '#fee2e2', badgeBorder: '#fecaca' },
+            missing: { label: '行方不明', badge: '不明', badgeBg: '#e2e8f0', badgeColor: '#475569', badgeBorder: '#94a3b8' },
+            injured: { label: '重傷', badge: '重傷', badgeBg: '#facc15', badgeColor: '#111827', badgeBorder: '#111827' },
+            restrained: { label: '拘束', badge: '拘束', badgeBg: '#dbeafe', badgeColor: '#1d4ed8', badgeBorder: '#60a5fa' },
+            insane: { label: '発狂', badge: '発狂', badgeBg: '#581c87', badgeColor: '#f5d0fe', badgeBorder: '#d946ef' },
+            hidden: { label: '秘匿', badge: '秘匿', badgeBg: '#1e293b', badgeColor: '#e2e8f0', badgeBorder: '#64748b' }
         };
 
         function normalizeNodeStatus(status) {
             if (NODE_STATUS_OPTIONS[status]) return status;
             if (!status) return 'normal';
+            if (status === '瀕死') return 'critical';
             if (status === '💀' || status === '死亡') return 'dead';
             if (status === '❔' || status === '行方不明') return 'missing';
             if (status === '重傷') return 'injured';
@@ -716,6 +825,8 @@
         let editingEdgeColor = '';
         let editingGroupColor = '';
         let editingMemoColor = '';
+        let clipboardItem = null;
+        let contextMenuState = null;
 
         // 画像出力設定
         let exportFormat = 'png';
@@ -795,6 +906,68 @@
             document.getElementById('btnRedo').disabled = redoStack.length === 0;
         }
 
+        function cloneData(data) {
+            return JSON.parse(JSON.stringify(data));
+        }
+
+        function getContextMenuElement() {
+            return document.getElementById('contextMenu');
+        }
+
+        function hideContextMenu() {
+            const menu = getContextMenuElement();
+            menu.classList.add('hidden');
+            menu.innerHTML = '';
+            contextMenuState = null;
+        }
+
+        function openContextMenu(clientX, clientY, items, context = null) {
+            const menu = getContextMenuElement();
+            menu.innerHTML = '';
+            contextMenuState = context;
+
+            items.forEach(item => {
+                if (item.type === 'separator') {
+                    const sep = document.createElement('div');
+                    sep.className = 'context-menu-separator';
+                    menu.appendChild(sep);
+                    return;
+                }
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `context-menu-button${item.danger ? ' danger' : ''}`;
+                button.textContent = item.label;
+                button.disabled = !!item.disabled;
+                button.addEventListener('click', () => {
+                    if (item.disabled) return;
+                    hideContextMenu();
+                    item.onSelect();
+                });
+                menu.appendChild(button);
+            });
+
+            menu.classList.remove('hidden');
+            const padding = 12;
+            const rect = menu.getBoundingClientRect();
+            const left = Math.min(clientX, window.innerWidth - rect.width - padding);
+            const top = Math.min(clientY, window.innerHeight - rect.height - padding);
+            menu.style.left = `${Math.max(padding, left)}px`;
+            menu.style.top = `${Math.max(padding, top)}px`;
+        }
+
+        function setClipboardItem(type, data) {
+            clipboardItem = { type, data: cloneData(data) };
+        }
+
+        function getPasteLabel() {
+            if (!clipboardItem) return '貼り付け';
+            if (clipboardItem.type === 'node') return 'キャラを貼り付け';
+            if (clipboardItem.type === 'group') return '枠を貼り付け';
+            if (clipboardItem.type === 'memo') return 'メモを貼り付け';
+            return '貼り付け';
+        }
+
         // --- 保存・読込 ---
         function saveToLocalStorage() {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
@@ -829,6 +1002,10 @@
                     state.nodes.forEach(n => {
                         n.status = normalizeNodeStatus(n.status);
                         if(n.memo === undefined) n.memo = '';
+                        if(n.showStatusBadge === undefined) n.showStatusBadge = true;
+                        if(n.showNameLabel === undefined) n.showNameLabel = true;
+                        if(!n.labelBgColor) n.labelBgColor = '#ffffff';
+                        if(!n.labelTextColor) n.labelTextColor = '#333333';
                     });
                     state.edges.forEach(e => {
                         if(!e.waypoints) e.waypoints = [];
@@ -914,7 +1091,15 @@
                         performRedo();
                     }
                 }
+                if (e.key === 'Escape') hideContextMenu();
             });
+            document.addEventListener('mousedown', (e) => {
+                if (!contextMenuState) return;
+                const menu = getContextMenuElement();
+                if (!menu.contains(e.target)) hideContextMenu();
+            });
+            window.addEventListener('resize', hideContextMenu);
+            document.addEventListener('scroll', hideContextMenu, true);
 
             document.getElementById('btnExportJson').addEventListener('click', exportToJson);
             document.getElementById('btnImportJson').addEventListener('click', () => jsonUploader.click());
@@ -925,6 +1110,14 @@
 
             const ws = document.getElementById('workspace');
             ws.addEventListener('mousedown', handleWorkspaceMouseDown);
+            ws.addEventListener('contextmenu', (e) => {
+                const target = e.target;
+                const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+                const isWorkspaceArea = target === ws || target.id === 'viewport' || target.id === 'groupLayer' || target.id === 'memoLayer' || target.id === 'elementsLayer' || target.id === 'svgLayer' || tagName === 'svg';
+                if (!isWorkspaceArea) return;
+                e.preventDefault();
+                openWorkspaceContextMenu(e.clientX, e.clientY);
+            });
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
             ws.addEventListener('wheel', handleWheel, { passive: false });
@@ -1427,9 +1620,35 @@
         // --- 要素の追加と描画 ---
         function addNode(x, y, name) {
             const id = 'node_' + nextNodeId++;
-            state.nodes.push({ id, x, y, name, status: 'normal', memo: '', image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + id });
+            state.nodes.push({
+                id,
+                x,
+                y,
+                name,
+                status: 'normal',
+                memo: '',
+                image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + id,
+                showStatusBadge: true,
+                showNameLabel: true,
+                labelBgColor: '#ffffff',
+                labelTextColor: '#333333'
+            });
             renderNodes();
             renderEdges();
+        }
+
+        function createNodeFromData(data, x, y) {
+            const id = 'node_' + nextNodeId++;
+            const node = {
+                ...cloneData(data),
+                id,
+                x,
+                y
+            };
+            state.nodes.push(node);
+            renderNodes();
+            renderEdges();
+            return node;
         }
 
         function renderNodes() {
@@ -1475,6 +1694,18 @@
                     }
                 });
 
+                el.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openContextMenu(e.clientX, e.clientY, [
+                        { label: '編集', onSelect: () => openNodeModal(node.id) },
+                        { label: '複製', onSelect: () => { createNodeFromData(node, node.x + 40, node.y + 40); commitChange(); } },
+                        { label: 'コピー', onSelect: () => setClipboardItem('node', node) },
+                        { type: 'separator' },
+                        { label: '削除', danger: true, onSelect: () => deleteNodeById(node.id) }
+                    ], { type: 'node', id: node.id });
+                });
+
                 const imgContainer = document.createElement('div');
                 imgContainer.className = 'node-image-container';
                 const statusKey = normalizeNodeStatus(node.status);
@@ -1487,15 +1718,22 @@
 
                 // ステータスバッジ
                 const statusMeta = NODE_STATUS_OPTIONS[statusKey] || NODE_STATUS_OPTIONS.normal;
-                if (statusMeta.badge) {
+                if (node.showStatusBadge !== false && statusMeta.badge) {
                     const statusDiv = document.createElement('div');
                     statusDiv.className = 'node-status';
                     statusDiv.innerText = statusMeta.badge;
+                    statusDiv.style.backgroundColor = statusMeta.badgeBg;
+                    statusDiv.style.color = statusMeta.badgeColor;
+                    statusDiv.style.borderColor = statusMeta.badgeBorder;
                     el.appendChild(statusDiv);
                 }
 
                 const nameDiv = document.createElement('div');
-                nameDiv.className = 'node-name'; nameDiv.innerText = node.name;
+                nameDiv.className = 'node-name';
+                nameDiv.innerText = node.name;
+                nameDiv.style.backgroundColor = node.labelBgColor || '#ffffff';
+                nameDiv.style.color = node.labelTextColor || '#333333';
+                nameDiv.style.borderColor = node.labelBgColor || '#e2e8f0';
 
                 const editBtn = document.createElement('button');
                 editBtn.className = 'absolute -top-2 -right-2 bg-white border border-slate-200 text-slate-500 rounded-full p-1.5 shadow-sm hover:bg-indigo-50 hover:text-indigo-600 z-20 pointer-events-auto';
@@ -1507,7 +1745,7 @@
                 });
 
                 el.appendChild(imgContainer);
-                el.appendChild(nameDiv);
+                if (node.showNameLabel !== false) el.appendChild(nameDiv);
                 el.appendChild(editBtn);
                 layer.appendChild(el);
             });
@@ -1518,6 +1756,18 @@
                 id: 'group_' + nextGroupId++, x, y, width: 300, height: 200, label: '新しい枠', color: '#94a3b8'
             });
             renderGroups();
+        }
+
+        function createGroupFromData(data, x, y) {
+            const group = {
+                ...cloneData(data),
+                id: 'group_' + nextGroupId++,
+                x,
+                y
+            };
+            state.groups.push(group);
+            renderGroups();
+            return group;
         }
 
         function renderGroups() {
@@ -1547,6 +1797,18 @@
                         const lp = getLocalPos(e.clientX, e.clientY);
                         state.offsetX = lp.x - g.x; state.offsetY = lp.y - g.y;
                     }
+                });
+
+                box.addEventListener('contextmenu', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openContextMenu(e.clientX, e.clientY, [
+                        { label: '枠を編集', onSelect: () => openGroupModal(g.id) },
+                        { label: '枠を複製', onSelect: () => { createGroupFromData(g, g.x + 30, g.y + 30); commitChange(); } },
+                        { label: '枠をコピー', onSelect: () => setClipboardItem('group', g) },
+                        { type: 'separator' },
+                        { label: '枠を削除', danger: true, onSelect: () => deleteGroupById(g.id) }
+                    ], { type: 'group', id: g.id });
                 });
 
                 const label = document.createElement('div');
@@ -1590,6 +1852,18 @@
                 fontSize: 13
             });
             renderMemos();
+        }
+
+        function createMemoFromData(data, x, y) {
+            const memo = {
+                ...cloneData(data),
+                id: 'memo_' + nextMemoId++,
+                x,
+                y
+            };
+            state.memos.push(memo);
+            renderMemos();
+            return memo;
         }
 
         function normalize(v) {
@@ -1701,6 +1975,18 @@
                 el.addEventListener('dblclick', e => {
                     e.stopPropagation();
                     if (!state.isConnecting) openMemoModal(m.id);
+                });
+
+                el.addEventListener('contextmenu', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openContextMenu(e.clientX, e.clientY, [
+                        { label: 'メモを編集', onSelect: () => openMemoModal(m.id) },
+                        { label: 'メモを複製', onSelect: () => { createMemoFromData(m, m.x + 30, m.y + 30); commitChange(); } },
+                        { label: 'メモをコピー', onSelect: () => setClipboardItem('memo', m) },
+                        { type: 'separator' },
+                        { label: 'メモを削除', danger: true, onSelect: () => deleteMemoById(m.id) }
+                    ], { type: 'memo', id: m.id });
                 });
 
                 const text = document.createElement('div');
@@ -1847,6 +2133,12 @@
                 if (edge.hasArrow) path.setAttribute('marker-end', ensureMarker(edge.color));
                 svgLayer.appendChild(path);
 
+                path.addEventListener('contextmenu', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openEdgeContextMenu(e.clientX, e.clientY, edge.id);
+                });
+
                 // ラベル位置計算
                 let totalLen = 0; const segs = [];
                 for (let i = 0; i < pts.length - 1; i++) {
@@ -1885,6 +2177,11 @@
                     const lp = getLocalPos(e.clientX, e.clientY);
                     state.labelDragStartX = lp.x; state.labelDragStartY = lp.y;
                     state.labelInitialOffset = { ...edge.labelOffset };
+                });
+                labelContainer.addEventListener('contextmenu', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openEdgeContextMenu(e.clientX, e.clientY, edge.id);
                 });
 
                 labelContainer.appendChild(span); labelContainer.appendChild(editBtn);
@@ -1941,6 +2238,77 @@
                     svgLayer.appendChild(tempLine);
                 }
             }
+        }
+
+        function pasteClipboardAt(x, y) {
+            if (!clipboardItem) return false;
+            if (clipboardItem.type === 'node') {
+                createNodeFromData(clipboardItem.data, x, y);
+                commitChange();
+                return true;
+            }
+            if (clipboardItem.type === 'group') {
+                createGroupFromData(clipboardItem.data, x - (clipboardItem.data.width || 300) / 2, y - (clipboardItem.data.height || 200) / 2);
+                commitChange();
+                return true;
+            }
+            if (clipboardItem.type === 'memo') {
+                createMemoFromData(clipboardItem.data, x - (clipboardItem.data.width || 220) / 2, y - (clipboardItem.data.height || 140) / 2);
+                commitChange();
+                return true;
+            }
+            return false;
+        }
+
+        function deleteNodeById(id) {
+            state.edges = state.edges.filter(e => e.sourceId !== id && e.targetId !== id);
+            state.nodes = state.nodes.filter(n => n.id !== id);
+            commitChange();
+            renderAll();
+        }
+
+        function deleteGroupById(id) {
+            state.groups = state.groups.filter(g => g.id !== id);
+            commitChange();
+            renderGroups();
+        }
+
+        function deleteMemoById(id) {
+            state.memos = state.memos.filter(m => m.id !== id);
+            commitChange();
+            renderMemos();
+        }
+
+        function deleteEdgeById(id) {
+            state.edges = state.edges.filter(e => e.id !== id);
+            commitChange();
+            renderEdges();
+        }
+
+        function openEdgeContextMenu(clientX, clientY, edgeId) {
+            const edge = state.edges.find(e => e.id === edgeId);
+            if (!edge) return;
+            openContextMenu(clientX, clientY, [
+                { label: '関係を編集', onSelect: () => openEdgeModal(edge.id) },
+                { label: edge.hasArrow ? '矢印を外す' : '矢印を付ける', onSelect: () => { edge.hasArrow = !edge.hasArrow; commitChange(); renderEdges(); } },
+                { label: 'ラベル位置をリセット', onSelect: () => { edge.labelOffset = { x: 0, y: 0 }; commitChange(); renderEdges(); } },
+                { type: 'separator' },
+                { label: '関係線を削除', danger: true, onSelect: () => deleteEdgeById(edge.id) }
+            ], { type: 'edge', id: edge.id });
+        }
+
+        function openWorkspaceContextMenu(clientX, clientY) {
+            const localPos = getLocalPos(clientX, clientY);
+            openContextMenu(clientX, clientY, [
+                { label: getPasteLabel(), disabled: !clipboardItem, onSelect: () => pasteClipboardAt(localPos.x, localPos.y) },
+                { type: 'separator' },
+                { label: 'キャラ追加', onSelect: () => { addNode(localPos.x, localPos.y, '新規キャラ'); commitChange(); } },
+                { label: '枠を追加', onSelect: () => { addGroup(localPos.x - 150, localPos.y - 100); commitChange(); } },
+                { label: 'メモ追加', onSelect: () => { addMemo(localPos.x - 110, localPos.y - 70); commitChange(); } },
+                { type: 'separator' },
+                { label: state.isConnecting ? '接続モードを終了' : '線をつなぐモード', onSelect: () => toggleConnectMode() },
+                { label: state.isEditingEdges ? '線を曲げるモードを終了' : '線を曲げるモード', onSelect: () => toggleEdgeEditMode() }
+            ], { type: 'workspace', x: localPos.x, y: localPos.y });
         }
 
         // --- モーダル管理 ---
@@ -2147,6 +2515,10 @@
             const n = state.nodes.find(x => x.id === id);
             document.getElementById('modalNodeName').value = n.name;
             document.getElementById('modalNodeStatus').value = normalizeNodeStatus(n.status);
+            document.getElementById('modalShowStatusBadge').checked = n.showStatusBadge !== false;
+            document.getElementById('modalShowNameLabel').checked = n.showNameLabel !== false;
+            document.getElementById('modalNodeLabelBg').value = n.labelBgColor || '#ffffff';
+            document.getElementById('modalNodeLabelColor').value = n.labelTextColor || '#333333';
             document.getElementById('modalNodeMemo').value = n.memo || '';
             document.getElementById('modalNodeImg').src = tempImageBase64 = n.image;
             openModalUI('nodeModal');
@@ -2157,6 +2529,10 @@
                 const name = document.getElementById('modalNodeName').value.trim();
                 if(name) n.name = name;
                 n.status = normalizeNodeStatus(document.getElementById('modalNodeStatus').value);
+                n.showStatusBadge = document.getElementById('modalShowStatusBadge').checked;
+                n.showNameLabel = document.getElementById('modalShowNameLabel').checked;
+                n.labelBgColor = document.getElementById('modalNodeLabelBg').value;
+                n.labelTextColor = document.getElementById('modalNodeLabelColor').value;
                 n.memo = document.getElementById('modalNodeMemo').value;
                 n.image = tempImageBase64;
                 commitChange(); renderNodes();
@@ -2165,9 +2541,7 @@
         }
         function deleteNode() {
             if(!confirm("削除しますか？\n関連する線も消えます。")) return;
-            state.edges = state.edges.filter(e => e.sourceId !== editingNodeId && e.targetId !== editingNodeId);
-            state.nodes = state.nodes.filter(n => n.id !== editingNodeId);
-            commitChange(); renderAll(); closeModal();
+            deleteNodeById(editingNodeId); closeModal();
         }
 
         // Edge
@@ -2237,8 +2611,7 @@
             closeModal();
         }
         function deleteEdge() {
-            state.edges = state.edges.filter(e => e.id !== editingEdgeId);
-            commitChange(); renderEdges(); closeModal();
+            deleteEdgeById(editingEdgeId); closeModal();
         }
 
         // Group
@@ -2261,8 +2634,7 @@
             closeModal();
         }
         function deleteGroup() {
-            state.groups = state.groups.filter(g => g.id !== editingGroupId);
-            commitChange(); renderGroups(); closeModal();
+            deleteGroupById(editingGroupId); closeModal();
         }
 
         // Memo
@@ -2297,8 +2669,7 @@
             closeModal();
         }
         function deleteMemo() {
-            state.memos = state.memos.filter(m => m.id !== editingMemoId);
-            commitChange(); renderMemos(); closeModal();
+            deleteMemoById(editingMemoId); closeModal();
         }
 
         init();
