@@ -48,6 +48,20 @@
             flex-direction: column;
             gap: 2px;
         }
+        .app-home-button {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 0;
+            background: transparent;
+            padding: 0;
+            text-align: left;
+            cursor: pointer;
+        }
+        .app-home-button:hover .app-subtitle,
+        .app-home-button:hover h1 {
+            color: #312e81;
+        }
         .app-subtitle {
             font-size: 11px;
             font-weight: 700;
@@ -437,16 +451,59 @@
         }
 
         @keyframes criticalPulse {
-            0%, 100% { opacity: 0.18; }
-            50% { opacity: 0.56; }
+            0%, 100% { opacity: 0.28; }
+            50% { opacity: 0.8; }
         }
 
         @keyframes criticalBorderPulse {
             0%, 100% {
-                box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.34), 0 0 18px rgba(220, 38, 38, 0.18);
+                box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.5), 0 0 24px rgba(220, 38, 38, 0.24);
             }
             50% {
-                box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.72), 0 0 24px rgba(239, 68, 68, 0.42);
+                box-shadow: 0 0 0 7px rgba(239, 68, 68, 0.88), 0 0 34px rgba(239, 68, 68, 0.5);
+            }
+        }
+
+        @keyframes insaneWave {
+            0% {
+                transform: scale(1) rotate(0deg);
+                border-radius: 50% 50% 50% 50%;
+                box-shadow:
+                    0 0 0 3px rgba(168, 85, 247, 0.55),
+                    0 0 18px rgba(168, 85, 247, 0.5),
+                    0 0 28px rgba(236, 72, 153, 0.28);
+            }
+            25% {
+                transform: scale(1.05, 0.96) rotate(-2deg);
+                border-radius: 48% 52% 46% 54%;
+                box-shadow:
+                    0 0 0 5px rgba(192, 38, 211, 0.6),
+                    0 0 24px rgba(217, 70, 239, 0.56),
+                    0 0 34px rgba(236, 72, 153, 0.34);
+            }
+            50% {
+                transform: scale(0.97, 1.07) rotate(2deg);
+                border-radius: 53% 47% 55% 45%;
+                box-shadow:
+                    0 0 0 6px rgba(168, 85, 247, 0.72),
+                    0 0 30px rgba(217, 70, 239, 0.62),
+                    0 0 44px rgba(34, 197, 94, 0.24);
+            }
+            75% {
+                transform: scale(1.04, 0.98) rotate(-1.5deg);
+                border-radius: 46% 54% 49% 51%;
+                box-shadow:
+                    0 0 0 4px rgba(236, 72, 153, 0.66),
+                    0 0 28px rgba(168, 85, 247, 0.58),
+                    0 0 38px rgba(250, 204, 21, 0.24);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                border-radius: 50% 50% 50% 50%;
+                box-shadow:
+                    0 0 0 3px rgba(168, 85, 247, 0.55),
+                    0 0 18px rgba(168, 85, 247, 0.5),
+                    0 0 28px rgba(236, 72, 153, 0.28);
             }
         }
 
@@ -495,7 +552,7 @@
             box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.35), 0 6px 14px rgba(100, 116, 139, 0.2);
         }
         .node-image-container.status-critical .node-img {
-            filter: grayscale(1) contrast(1.12) brightness(0.72);
+            filter: grayscale(0.92) contrast(1.2) brightness(0.54) sepia(0.38) saturate(1.55) hue-rotate(-18deg);
         }
         .node-image-container.status-critical {
             border-color: #ef4444;
@@ -506,8 +563,9 @@
             position: absolute;
             inset: 0;
             background:
-                linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(127, 29, 29, 0.08)),
-                radial-gradient(circle at 50% 50%, rgba(248, 113, 113, 0.48), transparent 60%);
+                linear-gradient(135deg, rgba(239, 68, 68, 0.36), rgba(127, 29, 29, 0.18)),
+                radial-gradient(circle at 50% 50%, rgba(248, 113, 113, 0.72), transparent 62%),
+                radial-gradient(circle at 32% 28%, rgba(127, 29, 29, 0.4), transparent 38%);
             animation: criticalPulse 0.45s ease-in-out infinite;
             pointer-events: none;
         }
@@ -563,10 +621,7 @@
         }
         .node-image-container.status-insane {
             border-color: #a855f7;
-            box-shadow:
-                0 0 0 3px rgba(168, 85, 247, 0.55),
-                0 0 18px rgba(168, 85, 247, 0.5),
-                0 0 28px rgba(236, 72, 153, 0.28);
+            animation: insaneWave 1.8s ease-in-out infinite;
         }
         .node-image-container.status-insane::before {
             content: '';
@@ -833,6 +888,7 @@
                     </p>
                     <div class="landing-actions">
                         <button id="btnEnterApp" class="landing-primary-button" type="button">使い始める</button>
+                        <button id="btnLoadDemo" class="landing-secondary-button" type="button">デモを開く</button>
                         <button id="btnLandingImport" class="landing-secondary-button" type="button">保存JSONを読み込む</button>
                     </div>
                     <p id="landingSavedHint" class="landing-mini-note mt-4 hidden">このブラウザに保存済みデータがあります。続きから開いてすぐ編集できます。</p>
@@ -910,13 +966,15 @@
     <header class="app-header">
         <div class="app-header-top">
             <div class="app-brand-row">
-                <div class="app-title-block">
-                    <span class="app-subtitle">TRPG Relation Sheet</span>
-                    <h1 class="text-lg font-bold text-slate-700 flex items-center gap-2 whitespace-nowrap">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        相関図メーカー
-                    </h1>
-                </div>
+                <button id="btnOpenLanding" class="app-home-button" type="button">
+                    <div class="app-title-block">
+                        <span class="app-subtitle">TRPG Relation Sheet</span>
+                        <h1 class="text-lg font-bold text-slate-700 flex items-center gap-2 whitespace-nowrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            相関図メーカー
+                        </h1>
+                    </div>
+                </button>
 
                 <div class="toolbar-soft-panel">
                     <button id="btnUndo" class="p-1.5 rounded hover:bg-white text-slate-500 hover:text-slate-800 transition-colors shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed" title="元に戻す (Ctrl+Z)" disabled>
@@ -1328,6 +1386,7 @@
             isHandMode: false,
             isSelectingItems: false,
             isToolbarCollapsed: false,
+            isDemoScene: false,
             isItemGroupPanelCollapsed: false,
             selectedItems: [],
             activeItemGroupId: null,
@@ -1605,6 +1664,133 @@
             overlay.classList.add('hidden');
         }
 
+        function enterFromLanding() {
+            const hasSavedData = !!localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (state.isDemoScene && hasSavedData) {
+                const loaded = loadData();
+                if (loaded) {
+                    renderAll();
+                    updateViewportTransform();
+                }
+            }
+            closeLandingPage();
+        }
+
+        function fitViewportToCurrentContent() {
+            const bbox = calculateBoundingBox();
+            const ws = document.getElementById('workspace');
+            if (!ws || !bbox) return;
+            const padding = 70;
+            const scaleX = (ws.clientWidth - padding * 2) / Math.max(240, bbox.width);
+            const scaleY = (ws.clientHeight - padding * 2) / Math.max(200, bbox.height);
+            const newScale = Math.max(0.22, Math.min(1.4, Math.min(scaleX, scaleY)));
+            state.transform.scale = newScale;
+            state.transform.x = ws.clientWidth / 2 - (bbox.x + bbox.width / 2) * newScale;
+            state.transform.y = ws.clientHeight / 2 - (bbox.y + bbox.height / 2) * newScale;
+            updateViewportTransform();
+            saveToLocalStorage();
+        }
+
+        function loadDemoScene() {
+            const demoData = {
+                nodes: [
+                    {
+                        id: 'node_1', x: 260, y: 230, name: '城野 誠', status: 'normal', locked: false, memo: '調査班の中心人物。表向きは落ち着いているが、情報を抱え込みがち。',
+                        image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=jouno',
+                        showStatusBadge: true, showNameLabel: true, labelBgColor: '#ffffff', labelTextColor: '#1f2937'
+                    },
+                    {
+                        id: 'node_2', x: 500, y: 190, name: '久瀬 レイ', status: 'injured', locked: false, memo: '現場帰り。傷を押して動いている。',
+                        image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=kuze',
+                        showStatusBadge: true, showNameLabel: true, labelBgColor: '#fff7ed', labelTextColor: '#7c2d12'
+                    },
+                    {
+                        id: 'node_3', x: 745, y: 250, name: '霧島 透子', status: 'hidden', locked: false, memo: '正体を隠して接触中。秘匿情報の対象。',
+                        image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=kirishima',
+                        showStatusBadge: true, showNameLabel: true, labelBgColor: '#e2e8f0', labelTextColor: '#0f172a'
+                    },
+                    {
+                        id: 'node_4', x: 300, y: 470, name: '綾瀬 司', status: 'critical', locked: false, memo: '瀕死。現在は病室で保護中。',
+                        image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=ayase',
+                        showStatusBadge: true, showNameLabel: true, labelBgColor: '#fff1f2', labelTextColor: '#9f1239'
+                    },
+                    {
+                        id: 'node_5', x: 590, y: 500, name: '黒峰 凛', status: 'insane', locked: false, memo: '発狂状態。関係の歪みが強く出ている例。',
+                        image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=kuromine',
+                        showStatusBadge: true, showNameLabel: true, labelBgColor: '#faf5ff', labelTextColor: '#581c87'
+                    },
+                    {
+                        id: 'node_6', x: 860, y: 430, name: '穂坂 シオン', status: 'missing', locked: false, memo: '失踪中。位置不明キャラの例。',
+                        image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=hosaka',
+                        showStatusBadge: true, showNameLabel: true, labelBgColor: '#f8fafc', labelTextColor: '#334155'
+                    }
+                ],
+                edges: [
+                    { id: 'edge_1', sourceId: 'node_1', targetId: 'node_2', label: '相棒', color: '#3b82f6', hasArrow: true, waypoints: [], labelOffset: { x: 0, y: -18 }, style: 'solid', width: 4 },
+                    { id: 'edge_2', sourceId: 'node_2', targetId: 'node_5', label: '危険視', color: '#f97316', hasArrow: true, waypoints: [{ x: 540, y: 305 }], labelOffset: { x: 8, y: -8 }, style: 'dashed', width: 3 },
+                    { id: 'edge_3', sourceId: 'node_3', targetId: 'node_1', label: '監視', color: '#64748b', hasArrow: true, waypoints: [{ x: 625, y: 138 }, { x: 380, y: 140 }], labelOffset: { x: 0, y: -12 }, style: 'dotted', width: 3 },
+                    { id: 'edge_4', sourceId: 'node_1', targetId: 'node_4', label: '保護', color: '#10b981', hasArrow: true, waypoints: [], labelOffset: { x: -12, y: 8 }, style: 'solid', width: 3 },
+                    { id: 'edge_5', sourceId: 'node_5', targetId: 'node_4', label: '執着', color: '#d946ef', hasArrow: true, waypoints: [{ x: 470, y: 560 }], labelOffset: { x: 14, y: -16 }, style: 'solid', width: 4 },
+                    { id: 'edge_6', sourceId: 'node_6', targetId: 'node_3', label: '行方の鍵', color: '#0f766e', hasArrow: true, waypoints: [], labelOffset: { x: 12, y: 6 }, style: 'dashed', width: 3 }
+                ],
+                groups: [
+                    { id: 'group_1', x: 150, y: 110, width: 440, height: 470, label: '調査班', color: '#3b82f6', locked: false },
+                    { id: 'group_2', x: 640, y: 120, width: 300, height: 430, label: '不審人物', color: '#8b5cf6', locked: false }
+                ],
+                memos: [
+                    {
+                        id: 'memo_1', x: 130, y: 620, width: 310, height: 120, text: '右クリックで複製・コピー・ロック。\n選択モードで複数選択してグループ化できます。',
+                        color: '#fef3c7', corners: 4, roundness: 14, alignX: 'left', alignY: 'center', fontSize: 14, locked: false
+                    },
+                    {
+                        id: 'memo_2', x: 655, y: 610, width: 285, height: 126, text: '線を曲げるモードでは\n中継点を追加してドラッグ。\nダブルクリックで削除。',
+                        color: '#dbeafe', corners: 6, roundness: 18, alignX: 'center', alignY: 'center', fontSize: 14, locked: false
+                    }
+                ],
+                itemGroups: [
+                    {
+                        id: 'item_group_1',
+                        name: '主役サイド',
+                        items: [
+                            { type: 'node', id: 'node_1' },
+                            { type: 'node', id: 'node_2' },
+                            { type: 'node', id: 'node_4' },
+                            { type: 'group', id: 'group_1' },
+                            { type: 'memo', id: 'memo_1' }
+                        ]
+                    },
+                    {
+                        id: 'item_group_2',
+                        name: '謎の側',
+                        items: [
+                            { type: 'node', id: 'node_3' },
+                            { type: 'node', id: 'node_5' },
+                            { type: 'node', id: 'node_6' },
+                            { type: 'group', id: 'group_2' },
+                            { type: 'memo', id: 'memo_2' }
+                        ]
+                    }
+                ],
+                background: { type: 'grid', color: '#f8fafc' },
+                nextNodeId: 7,
+                nextEdgeId: 7,
+                nextMemoId: 3,
+                nextGroupId: 3,
+                nextItemGroupId: 3,
+                transform: { x: 0, y: 0, scale: 1 }
+            };
+
+            state.isDemoScene = true;
+            restoreState(demoData);
+            state.activeItemGroupId = null;
+            state.selectedItems = [];
+            applyBackground();
+            fitViewportToCurrentContent();
+            pushHistory();
+            updateUndoRedoUI();
+            closeLandingPage();
+        }
+
         function createItemGroupFromSelection() {
             const validItems = state.selectedItems.filter(item => getExistingItem(item.type, item.id));
             if (validItems.length === 0) return;
@@ -1636,6 +1822,16 @@
             if (state.activeItemGroupId === id) state.activeItemGroupId = null;
             commitChange();
             renderAll();
+        }
+
+        function renameItemGroup(id) {
+            const group = getItemGroupById(id);
+            if (!group) return;
+            const nextName = prompt('グループ名を編集してください', group.name)?.trim();
+            if (!nextName || nextName === group.name) return;
+            group.name = nextName;
+            commitChange();
+            renderItemGroupPanel();
         }
 
         function focusItemGroup(id) {
@@ -1737,8 +1933,22 @@
                     deleteItemGroup(group.id);
                 });
 
+                const edit = document.createElement('button');
+                edit.type = 'button';
+                edit.className = 'text-xs text-indigo-600 hover:text-indigo-800 font-bold';
+                edit.innerText = '編集';
+                edit.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    renameItemGroup(group.id);
+                });
+
+                const actions = document.createElement('div');
+                actions.className = 'flex items-center gap-2';
+                actions.appendChild(edit);
+                actions.appendChild(del);
+
                 row.appendChild(info);
-                row.appendChild(del);
+                row.appendChild(actions);
                 entry.appendChild(row);
                 listEl.appendChild(entry);
             });
@@ -1805,6 +2015,7 @@
 
         // --- 保存・読込 ---
         function saveToLocalStorage() {
+            if (state.isDemoScene) return;
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
                 nodes: state.nodes,
                 edges: state.edges,
@@ -1828,6 +2039,7 @@
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
+                    state.isDemoScene = false;
                     state.nodes = data.nodes || [];
                     state.edges = data.edges || [];
                     state.groups = data.groups || [];
@@ -1920,7 +2132,9 @@
             document.getElementById('btnToggleSelectionMode').addEventListener('click', () => toggleSelectionMode());
             document.getElementById('btnToggleToolbar').addEventListener('click', () => toggleToolbar());
             document.getElementById('btnToggleItemGroupPanel').addEventListener('click', toggleItemGroupPanel);
-            document.getElementById('btnEnterApp').addEventListener('click', closeLandingPage);
+            document.getElementById('btnOpenLanding').addEventListener('click', () => openLandingPage(!!localStorage.getItem(LOCAL_STORAGE_KEY)));
+            document.getElementById('btnEnterApp').addEventListener('click', enterFromLanding);
+            document.getElementById('btnLoadDemo').addEventListener('click', loadDemoScene);
             document.getElementById('btnLandingImport').addEventListener('click', () => {
                 closeLandingPage();
                 jsonUploader.click();
@@ -2041,6 +2255,7 @@
             const reader = new FileReader();
             reader.onload = function(event) {
                 try {
+                    state.isDemoScene = false;
                     restoreState(JSON.parse(event.target.result));
                     commitChange();
                     updateViewportTransform();
