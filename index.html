@@ -3215,10 +3215,22 @@
             return `url(#${id})`;
         }
 
-        function getBoundaryRadius(dx, dy) {
+        function getBoundaryRadius(dx, dy, node = null) {
             const len = Math.hypot(dx, dy);
             if (len === 0) return 55;
-            return 55 + (dy / len > 0 ? (dy / len) * 40 : 0);
+            const verticalRatio = dy / len;
+            let radius = 55 + (verticalRatio > 0 ? verticalRatio * 40 : 0);
+
+            if (node) {
+                const statusKey = normalizeNodeStatus(node.status);
+                const statusMeta = NODE_STATUS_OPTIONS[statusKey] || NODE_STATUS_OPTIONS.normal;
+                const hasVisibleBadge = node.showStatusBadge !== false && !!statusMeta.badge;
+                if (hasVisibleBadge && verticalRatio < -0.18) {
+                    radius += Math.abs(verticalRatio) * 12 + 5;
+                }
+            }
+
+            return radius;
         }
 
         function renderEdges() {
@@ -3248,12 +3260,12 @@
 
                 if (pts.length >= 2) {
                     const dx1 = pts[1].x - pts[0].x, dy1 = pts[1].y - pts[0].y;
-                    const len1 = Math.hypot(dx1, dy1), r1 = getBoundaryRadius(dx1, dy1);
+                    const len1 = Math.hypot(dx1, dy1), r1 = getBoundaryRadius(dx1, dy1, sn);
                     if (len1 > r1) { pts[0].x += (dx1/len1)*r1; pts[0].y += (dy1/len1)*r1; }
                     
                     const last = pts.length - 1;
                     const dx2 = pts[last].x - pts[last-1].x, dy2 = pts[last].y - pts[last-1].y;
-                    const len2 = Math.hypot(dx2, dy2), r2 = getBoundaryRadius(-dx2, -dy2);
+                    const len2 = Math.hypot(dx2, dy2), r2 = getBoundaryRadius(-dx2, -dy2, tn);
                     if (len2 > r2) { pts[last].x -= (dx2/len2)*r2; pts[last].y -= (dy2/len2)*r2; }
                 }
 
