@@ -137,6 +137,226 @@
             display: none;
         }
 
+        .landing-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            background:
+                radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 32%),
+                radial-gradient(circle at top right, rgba(16, 185, 129, 0.16), transparent 28%),
+                linear-gradient(180deg, #f8fafc 0%, #eef2ff 42%, #f8fafc 100%);
+            overflow-y: auto;
+        }
+        .landing-overlay.hidden {
+            display: none;
+        }
+        .landing-shell {
+            width: min(1120px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 48px 0 56px;
+        }
+        .landing-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+            gap: 18px;
+            align-items: stretch;
+        }
+        .landing-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 28px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+            backdrop-filter: blur(12px);
+        }
+        .landing-main {
+            padding: 34px;
+        }
+        .landing-side {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .landing-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(79, 70, 229, 0.1);
+            color: #4338ca;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .landing-title {
+            margin-top: 18px;
+            font-size: clamp(32px, 4.5vw, 52px);
+            line-height: 1.04;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.04em;
+        }
+        .landing-lead {
+            margin-top: 16px;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #475569;
+            max-width: 56ch;
+        }
+        .landing-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .landing-primary-button,
+        .landing-secondary-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            padding: 0 18px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 800;
+            transition: transform 0.16s, box-shadow 0.16s, background 0.16s;
+        }
+        .landing-primary-button {
+            background: linear-gradient(135deg, #4f46e5, #2563eb);
+            color: white;
+            box-shadow: 0 14px 30px rgba(79, 70, 229, 0.24);
+        }
+        .landing-secondary-button {
+            background: white;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+        .landing-primary-button:hover,
+        .landing-secondary-button:hover {
+            transform: translateY(-1px);
+        }
+        .landing-mini-note {
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.7;
+        }
+        .landing-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .landing-kpi {
+            border-radius: 18px;
+            background: rgba(248, 250, 252, 0.92);
+            border: 1px solid #e2e8f0;
+            padding: 14px;
+        }
+        .landing-kpi strong {
+            display: block;
+            font-size: 22px;
+            color: #0f172a;
+        }
+        .landing-kpi span {
+            display: block;
+            margin-top: 4px;
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        .landing-section-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+            margin-top: 18px;
+        }
+        .landing-section {
+            padding: 22px;
+        }
+        .landing-section h2,
+        .landing-side h2 {
+            font-size: 18px;
+            font-weight: 900;
+            color: #0f172a;
+            margin-bottom: 12px;
+        }
+        .landing-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .landing-list-item {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            color: #334155;
+            line-height: 1.7;
+            font-size: 14px;
+        }
+        .landing-list-item strong {
+            color: #0f172a;
+        }
+        .landing-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            margin-top: 8px;
+            flex: 0 0 auto;
+            background: linear-gradient(135deg, #6366f1, #14b8a6);
+        }
+        .landing-tip-box {
+            padding: 16px 18px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(224, 231, 255, 0.84), rgba(236, 253, 245, 0.84));
+            border: 1px solid rgba(165, 180, 252, 0.55);
+        }
+        .landing-tip-box strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #312e81;
+            font-size: 13px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .landing-status-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .landing-status-pill {
+            padding: 7px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+        .landing-status-pill.normal { background: #f8fafc; color: #334155; border-color: #cbd5e1; }
+        .landing-status-pill.critical { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        .landing-status-pill.dead { background: #7f1d1d; color: #fee2e2; border-color: #991b1b; }
+        .landing-status-pill.missing { background: #e2e8f0; color: #334155; border-color: #94a3b8; }
+        .landing-status-pill.injured { background: #fef3c7; color: #854d0e; border-color: #facc15; }
+        .landing-status-pill.restrained { background: #dbeafe; color: #1d4ed8; border-color: #60a5fa; }
+        .landing-status-pill.insane { background: #581c87; color: #f5d0fe; border-color: #d946ef; }
+        .landing-status-pill.hidden { background: #1e293b; color: #e2e8f0; border-color: #64748b; }
+
+        @media (max-width: 960px) {
+            .landing-hero,
+            .landing-section-grid {
+                grid-template-columns: 1fr;
+            }
+            .landing-main,
+            .landing-side,
+            .landing-section {
+                padding: 22px;
+            }
+            .landing-kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 960px) {
             .app-toolbar-grid {
                 flex-wrap: wrap;
@@ -600,6 +820,92 @@
   gtag('config', 'G-0J74WB2H9G');
 </script>
 <body class="h-screen w-screen flex flex-col bg-slate-50 text-slate-800">
+
+    <div id="landingOverlay" class="landing-overlay">
+        <div class="landing-shell">
+            <div class="landing-hero">
+                <section class="landing-card landing-main">
+                    <div class="landing-badge">TRPG Relation Sheet</div>
+                    <h1 class="landing-title">キャラ相関図を、<br>すぐ整って、あとから育てられる形で。</h1>
+                    <p class="landing-lead">
+                        このアプリは、TRPG・創作・シナリオ管理向けの相関図メーカーです。キャラ、関係線、枠、メモを自由に置きながら、
+                        状態変化やグループ整理、画像出力までひとつの画面で進められます。
+                    </p>
+                    <div class="landing-actions">
+                        <button id="btnEnterApp" class="landing-primary-button" type="button">使い始める</button>
+                        <button id="btnLandingImport" class="landing-secondary-button" type="button">保存JSONを読み込む</button>
+                    </div>
+                    <p id="landingSavedHint" class="landing-mini-note mt-4 hidden">このブラウザに保存済みデータがあります。続きから開いてすぐ編集できます。</p>
+
+                    <div class="landing-kpi-grid">
+                        <div class="landing-kpi">
+                            <strong>キャラ</strong>
+                            <span>画像・名前・状態・ラベル色を設定して、相関の中心を作れます。</span>
+                        </div>
+                        <div class="landing-kpi">
+                            <strong>関係線</strong>
+                            <span>ラベル、色、矢印、太さ、中継点を使って関係性を細かく表現できます。</span>
+                        </div>
+                        <div class="landing-kpi">
+                            <strong>整理機能</strong>
+                            <span>枠、メモ、ロック、グループ一覧、保存読込で長期運用もしやすくしています。</span>
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="landing-card landing-side">
+                    <div>
+                        <h2>今できること</h2>
+                        <div class="landing-list">
+                            <div class="landing-list-item"><span class="landing-dot"></span><span><strong>キャラカード編集</strong><br>画像変更、状態選択、バッジ表示、ラベル色変更、メモ記入に対応。</span></div>
+                            <div class="landing-list-item"><span class="landing-dot"></span><span><strong>関係線の調整</strong><br>線ラベル、色、線種、矢印、太さ、自由中継点の追加と削除が可能。</span></div>
+                            <div class="landing-list-item"><span class="landing-dot"></span><span><strong>枠とメモの配置</strong><br>陣営・場所・注意書きなどを自由に配置し、ロックで事故も防げます。</span></div>
+                            <div class="landing-list-item"><span class="landing-dot"></span><span><strong>右クリック操作</strong><br>複製、コピー、削除、ロック、グループ選択などを要素ごとに素早く使えます。</span></div>
+                            <div class="landing-list-item"><span class="landing-dot"></span><span><strong>保存と書き出し</strong><br>自動保存、JSON保存/読込、画像ダウンロードで共有しやすい構成です。</span></div>
+                        </div>
+                    </div>
+
+                    <div class="landing-tip-box">
+                        <strong>ステータス表現</strong>
+                        <div class="landing-status-row">
+                            <span class="landing-status-pill normal">通常</span>
+                            <span class="landing-status-pill critical">瀕死</span>
+                            <span class="landing-status-pill dead">死亡</span>
+                            <span class="landing-status-pill missing">行方不明</span>
+                            <span class="landing-status-pill injured">重傷</span>
+                            <span class="landing-status-pill restrained">拘束</span>
+                            <span class="landing-status-pill insane">発狂</span>
+                            <span class="landing-status-pill hidden">秘匿</span>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            <div class="landing-section-grid">
+                <section class="landing-card landing-section">
+                    <h2>基本の使い方</h2>
+                    <div class="landing-list">
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>1. キャラを置く</strong><br>`キャラ追加` から人物を増やし、ドラッグで配置します。</span></div>
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>2. 情報を整える</strong><br>ダブルクリックか右クリックの `編集` で名前、画像、状態、メモを入れます。</span></div>
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>3. 関係をつなぐ</strong><br>`線をつなぐ` でキャラ同士をクリックし、あとから線ラベルや色を編集します。</span></div>
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>4. 枠とメモで整理する</strong><br>陣営ごとに枠で囲み、補足情報や秘匿情報はメモとして置きます。</span></div>
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>5. グループで見返す</strong><br>選択モードや右クリックで項目を選び、グループ化して一覧から注目できます。</span></div>
+                    </div>
+                </section>
+
+                <section class="landing-card landing-section">
+                    <h2>便利な操作</h2>
+                    <div class="landing-list">
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>ハンドモード</strong><br>編集せずに画面を見る専用モード。大きい相関図の確認に向いています。</span></div>
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>選択モード</strong><br>キャラ・枠・メモをクリックしてグループ用の選択を集められます。</span></div>
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>線を曲げる</strong><br>中継点を追加し、ドラッグで自由に位置を変え、ダブルクリックで消せます。</span></div>
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>右クリックメニュー</strong><br>複製、コピー、削除、ロック解除などを要素の近くで直接操作できます。</span></div>
+                        <div class="landing-list-item"><span class="landing-dot"></span><span><strong>保存の安心感</strong><br>編集中は自動保存され、必要なら時刻付きJSONとして別保存もできます。</span></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
 
     <header class="app-header">
         <div class="app-header-top">
@@ -1283,6 +1589,22 @@
             updateToolbarUI();
         }
 
+        function openLandingPage(hasSavedData = false) {
+            const overlay = document.getElementById('landingOverlay');
+            const savedHint = document.getElementById('landingSavedHint');
+            const enterBtn = document.getElementById('btnEnterApp');
+            if (!overlay || !savedHint || !enterBtn) return;
+            overlay.classList.remove('hidden');
+            savedHint.classList.toggle('hidden', !hasSavedData);
+            enterBtn.innerText = hasSavedData ? '続きから開く' : '使い始める';
+        }
+
+        function closeLandingPage() {
+            const overlay = document.getElementById('landingOverlay');
+            if (!overlay) return;
+            overlay.classList.add('hidden');
+        }
+
         function createItemGroupFromSelection() {
             const validItems = state.selectedItems.filter(item => getExistingItem(item.type, item.id));
             if (validItems.length === 0) return;
@@ -1572,6 +1894,7 @@
             updateSelectionModeUI();
             updateToolbarUI();
             renderItemGroupPanel();
+            openLandingPage(hasData);
             pushHistory(); // 初期状態を履歴に保存
 
             // イベントリスナー
@@ -1597,6 +1920,11 @@
             document.getElementById('btnToggleSelectionMode').addEventListener('click', () => toggleSelectionMode());
             document.getElementById('btnToggleToolbar').addEventListener('click', () => toggleToolbar());
             document.getElementById('btnToggleItemGroupPanel').addEventListener('click', toggleItemGroupPanel);
+            document.getElementById('btnEnterApp').addEventListener('click', closeLandingPage);
+            document.getElementById('btnLandingImport').addEventListener('click', () => {
+                closeLandingPage();
+                jsonUploader.click();
+            });
             document.getElementById('btnCreateItemGroup').addEventListener('click', createItemGroupFromSelection);
             document.getElementById('btnClearItemSelection').addEventListener('click', clearSelectedItems);
             
