@@ -143,7 +143,7 @@
         }
         .node-image-container.status-critical {
             border-color: #ef4444;
-            animation: criticalBorderPulse 1.05s ease-in-out infinite;
+            animation: criticalBorderPulse 0.55s ease-in-out infinite;
         }
         .node-image-container.status-critical::after {
             content: '';
@@ -152,7 +152,7 @@
             background:
                 linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(127, 29, 29, 0.08)),
                 radial-gradient(circle at 50% 50%, rgba(248, 113, 113, 0.48), transparent 60%);
-            animation: criticalPulse 0.9s ease-in-out infinite;
+            animation: criticalPulse 0.45s ease-in-out infinite;
             pointer-events: none;
         }
         .node-image-container.status-injured .node-img {
@@ -334,6 +334,46 @@
             margin: 6px 4px;
         }
 
+        .item-group-panel {
+            position: fixed;
+            top: 86px;
+            right: 14px;
+            width: 260px;
+            max-height: calc(100vh - 110px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            border-radius: 18px;
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(12px);
+            z-index: 35;
+        }
+        .item-group-panel.collapsed {
+            width: auto;
+            min-width: 0;
+            border-radius: 999px;
+        }
+        .item-group-list {
+            overflow: auto;
+        }
+        .item-group-panel.collapsed .item-group-panel-body {
+            display: none;
+        }
+        .item-group-panel.collapsed .item-group-panel-header {
+            padding: 6px;
+            border-bottom: none;
+        }
+        .item-group-panel.collapsed .item-group-title,
+        .item-group-panel.collapsed #groupSelectionCount {
+            display: none;
+        }
+        .item-group-entry.active {
+            background: #eef2ff;
+            border-color: #a5b4fc;
+        }
+
         .waypoint-handle {
             position: absolute;
             width: 14px; height: 14px;
@@ -468,6 +508,14 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 14 15 20 5"/><circle cx="10" cy="11" r="2"/><circle cx="14" cy="15" r="2"/></svg>
                 <span id="edgeEditModeText">線を曲げる</span>
             </button>
+            <button id="btnToggleHandMode" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1 shadow-sm whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5"></path><path d="M14 10V4a2 2 0 0 0-4 0v6"></path><path d="M10 10.5V5a2 2 0 0 0-4 0v10"></path><path d="M6 14H4a2 2 0 0 0-2 2v2a4 4 0 0 0 4 4h7a6 6 0 0 0 6-6v-2a2 2 0 0 0-2-2h-1"></path></svg>
+                <span id="handModeText">ハンドモード</span>
+            </button>
+            <button id="btnToggleSelectionMode" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1 shadow-sm whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4Z"></path><path d="M12 22V12"></path><path d="M19 7l-7 5-7-5"></path></svg>
+                <span id="selectionModeText">選択モード</span>
+            </button>
 
             <div class="w-px h-5 bg-slate-300 mx-1"></div>
 
@@ -498,6 +546,29 @@
             <div id="elementsLayer" class="absolute top-0 left-0 w-full h-full pointer-events-none z-20"></div>
         </div>
     </main>
+
+    <aside id="itemGroupPanel" class="item-group-panel">
+        <div class="item-group-panel-header px-4 py-3 border-b border-slate-200">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <button id="btnToggleItemGroupPanel" class="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors" title="項目グループ一覧の表示切替">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>
+                    </button>
+                    <h2 class="item-group-title text-sm font-bold text-slate-700">項目グループ</h2>
+                </div>
+                <span id="groupSelectionCount" class="text-xs text-slate-500">選択 0</span>
+            </div>
+            <div class="item-group-panel-body">
+                <div class="flex gap-2 mt-3">
+                <button id="btnCreateItemGroup" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-2 rounded-md text-xs font-bold transition-colors">選択から作成</button>
+                <button id="btnClearItemSelection" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-md text-xs font-bold transition-colors">解除</button>
+                </div>
+            </div>
+        </div>
+        <div class="item-group-panel-body flex-1 min-h-0">
+            <div id="itemGroupList" class="item-group-list p-3 h-full"></div>
+        </div>
+    </aside>
 
     <!-- ファイルアップローダー -->
     <input type="file" id="imageUploader" accept="image/*" class="hidden">
@@ -786,9 +857,15 @@
             edges: [],
             groups: [],
             memos: [],
+            itemGroups: [],
             background: { type: 'dot', color: '#f8fafc' },
             isConnecting: false,
             isEditingEdges: false,
+            isHandMode: false,
+            isSelectingItems: false,
+            isItemGroupPanelCollapsed: false,
+            selectedItems: [],
+            activeItemGroupId: null,
             sourceNodeId: null,
             draggedNodeId: null,
             draggedMemoId: null,
@@ -815,6 +892,7 @@
         let nextEdgeId = 1;
         let nextMemoId = 1;
         let nextGroupId = 1;
+        let nextItemGroupId = 1;
 
         let editingNodeId = null;
         let editingEdgeId = null;
@@ -853,8 +931,9 @@
                 edges: state.edges,
                 groups: state.groups,
                 memos: state.memos,
+                itemGroups: state.itemGroups,
                 background: state.background,
-                nextNodeId, nextEdgeId, nextMemoId, nextGroupId
+                nextNodeId, nextEdgeId, nextMemoId, nextGroupId, nextItemGroupId
             });
             
             if (undoStack.length > 0 && undoStack[undoStack.length - 1] === snapshot) return;
@@ -893,11 +972,15 @@
             state.edges = JSON.parse(JSON.stringify(data.edges));
             state.groups = JSON.parse(JSON.stringify(data.groups));
             state.memos = JSON.parse(JSON.stringify(data.memos || []));
+            state.itemGroups = JSON.parse(JSON.stringify(data.itemGroups || []));
             state.background = JSON.parse(JSON.stringify(data.background));
+            state.selectedItems = [];
+            state.activeItemGroupId = null;
             nextNodeId = data.nextNodeId;
             nextEdgeId = data.nextEdgeId;
             nextMemoId = data.nextMemoId || 1;
             nextGroupId = data.nextGroupId;
+            nextItemGroupId = data.nextItemGroupId || 1;
             renderAll();
         }
 
@@ -968,6 +1051,261 @@
             return '貼り付け';
         }
 
+        function makeItemKey(type, id) {
+            return `${type}:${id}`;
+        }
+
+        function isItemSelected(type, id) {
+            return state.selectedItems.some(item => item.type === type && item.id === id);
+        }
+
+        function toggleSelectedItem(type, id) {
+            const exists = isItemSelected(type, id);
+            if (exists) {
+                state.selectedItems = state.selectedItems.filter(item => !(item.type === type && item.id === id));
+            } else {
+                state.selectedItems.push({ type, id });
+            }
+            renderAll();
+        }
+
+        function clearSelectedItems() {
+            state.selectedItems = [];
+            renderItemGroupPanel();
+            renderAll();
+        }
+
+        function toggleSelectedItemAndRender(type, id) {
+            toggleSelectedItem(type, id);
+            renderItemGroupPanel();
+        }
+
+        function getItemGroupById(id) {
+            return state.itemGroups.find(group => group.id === id);
+        }
+
+        function getExistingItem(type, id) {
+            if (type === 'node') return state.nodes.find(item => item.id === id);
+            if (type === 'group') return state.groups.find(item => item.id === id);
+            if (type === 'memo') return state.memos.find(item => item.id === id);
+            return null;
+        }
+
+        function getActiveItemGroupKeys() {
+            const group = getItemGroupById(state.activeItemGroupId);
+            if (!group) return null;
+            return new Set(group.items.filter(item => getExistingItem(item.type, item.id)).map(item => makeItemKey(item.type, item.id)));
+        }
+
+        function getActiveNodeIdsForGroup() {
+            const group = getItemGroupById(state.activeItemGroupId);
+            if (!group) return null;
+            return new Set(group.items.filter(item => item.type === 'node' && getExistingItem(item.type, item.id)).map(item => item.id));
+        }
+
+        function toggleItemGroupPanel() {
+            state.isItemGroupPanelCollapsed = !state.isItemGroupPanelCollapsed;
+            renderItemGroupPanel();
+        }
+
+        function createItemGroupFromSelection() {
+            const validItems = state.selectedItems.filter(item => getExistingItem(item.type, item.id));
+            if (validItems.length === 0) return;
+            const name = prompt('グループ名を入力してください', `グループ ${nextItemGroupId}`)?.trim();
+            if (!name) return;
+            state.itemGroups.push({
+                id: `item_group_${nextItemGroupId++}`,
+                name,
+                items: cloneData(validItems)
+            });
+            state.selectedItems = [];
+            commitChange();
+            renderAll();
+        }
+
+        function removeItemReferencesFromItemGroups(type, id) {
+            state.itemGroups.forEach(group => {
+                group.items = group.items.filter(item => !(item.type === type && item.id === id));
+            });
+            state.itemGroups = state.itemGroups.filter(group => group.items.length > 0);
+            state.selectedItems = state.selectedItems.filter(item => !(item.type === type && item.id === id));
+            if (state.activeItemGroupId && !getItemGroupById(state.activeItemGroupId)) {
+                state.activeItemGroupId = null;
+            }
+        }
+
+        function deleteItemGroup(id) {
+            state.itemGroups = state.itemGroups.filter(group => group.id !== id);
+            if (state.activeItemGroupId === id) state.activeItemGroupId = null;
+            commitChange();
+            renderAll();
+        }
+
+        function focusItemGroup(id) {
+            const group = getItemGroupById(id);
+            if (!group) return;
+            state.activeItemGroupId = state.activeItemGroupId === id ? null : id;
+            if (!state.activeItemGroupId) {
+                renderAll();
+                return;
+            }
+
+            const items = group.items.map(item => ({ ...item, ref: getExistingItem(item.type, item.id) })).filter(item => item.ref);
+            if (items.length === 0) {
+                renderAll();
+                return;
+            }
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            items.forEach(item => {
+                if (item.type === 'node') {
+                    minX = Math.min(minX, item.ref.x - 90);
+                    minY = Math.min(minY, item.ref.y - 90);
+                    maxX = Math.max(maxX, item.ref.x + 90);
+                    maxY = Math.max(maxY, item.ref.y + 90);
+                } else if (item.type === 'group') {
+                    minX = Math.min(minX, item.ref.x - 20);
+                    minY = Math.min(minY, item.ref.y - 30);
+                    maxX = Math.max(maxX, item.ref.x + item.ref.width + 20);
+                    maxY = Math.max(maxY, item.ref.y + item.ref.height + 20);
+                } else if (item.type === 'memo') {
+                    minX = Math.min(minX, item.ref.x - 20);
+                    minY = Math.min(minY, item.ref.y - 20);
+                    maxX = Math.max(maxX, item.ref.x + item.ref.width + 20);
+                    maxY = Math.max(maxY, item.ref.y + item.ref.height + 20);
+                }
+            });
+
+            const ws = document.getElementById('workspace');
+            const boundsWidth = Math.max(200, maxX - minX);
+            const boundsHeight = Math.max(160, maxY - minY);
+            const padding = 80;
+            const scaleX = (ws.clientWidth - padding * 2) / boundsWidth;
+            const scaleY = (ws.clientHeight - padding * 2) / boundsHeight;
+            const newScale = Math.max(0.2, Math.min(2.2, Math.min(scaleX, scaleY)));
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            state.transform.scale = newScale;
+            state.transform.x = ws.clientWidth / 2 - centerX * newScale;
+            state.transform.y = ws.clientHeight / 2 - centerY * newScale;
+            updateViewportTransform();
+            saveToLocalStorage();
+            renderAll();
+        }
+
+        function renderItemGroupPanel() {
+            const countEl = document.getElementById('groupSelectionCount');
+            const listEl = document.getElementById('itemGroupList');
+            const panel = document.getElementById('itemGroupPanel');
+            if (!countEl || !listEl || !panel) return;
+            panel.classList.toggle('collapsed', state.isItemGroupPanelCollapsed);
+            countEl.innerText = `選択 ${state.selectedItems.length}`;
+            document.getElementById('btnCreateItemGroup').disabled = state.selectedItems.length === 0;
+            listEl.innerHTML = '';
+
+            if (state.itemGroups.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'text-xs text-slate-500 leading-6 px-1';
+                empty.innerText = '右クリックで項目を選択に追加して、ここからグループを作れます。';
+                listEl.appendChild(empty);
+                return;
+            }
+
+            state.itemGroups.forEach(group => {
+                const validCount = group.items.filter(item => getExistingItem(item.type, item.id)).length;
+                const entry = document.createElement('button');
+                entry.type = 'button';
+                entry.className = `item-group-entry w-full text-left rounded-xl border px-3 py-2 mb-2 transition-colors ${state.activeItemGroupId === group.id ? 'active' : 'border-slate-200 bg-white hover:bg-slate-50'}`;
+                entry.addEventListener('click', () => focusItemGroup(group.id));
+
+                const title = document.createElement('div');
+                title.className = 'text-sm font-bold text-slate-700';
+                title.innerText = group.name;
+                const meta = document.createElement('div');
+                meta.className = 'text-xs text-slate-500 mt-1';
+                meta.innerText = `${validCount}項目`;
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-2';
+                const info = document.createElement('div');
+                info.appendChild(title);
+                info.appendChild(meta);
+
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'text-xs text-red-500 hover:text-red-700 font-bold';
+                del.innerText = '削除';
+                del.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteItemGroup(group.id);
+                });
+
+                row.appendChild(info);
+                row.appendChild(del);
+                entry.appendChild(row);
+                listEl.appendChild(entry);
+            });
+        }
+
+        function startPanning(clientX, clientY) {
+            hideContextMenu();
+            state.isPanning = true;
+            state.panStartX = clientX - state.transform.x;
+            state.panStartY = clientY - state.transform.y;
+        }
+
+        function updateHandModeUI() {
+            const btn = document.getElementById('btnToggleHandMode');
+            const text = document.getElementById('handModeText');
+            if (!btn || !text) return;
+            if (state.isHandMode) {
+                btn.classList.replace('bg-slate-200', 'bg-amber-500');
+                btn.classList.replace('text-slate-700', 'text-white');
+                text.innerText = 'ハンド中';
+            } else {
+                btn.classList.replace('bg-amber-500', 'bg-slate-200');
+                btn.classList.replace('text-white', 'text-slate-700');
+                text.innerText = 'ハンドモード';
+            }
+        }
+
+        function updateSelectionModeUI() {
+            const btn = document.getElementById('btnToggleSelectionMode');
+            const text = document.getElementById('selectionModeText');
+            if (!btn || !text) return;
+            if (state.isSelectingItems) {
+                btn.classList.replace('bg-slate-200', 'bg-indigo-500');
+                btn.classList.replace('text-slate-700', 'text-white');
+                text.innerText = '選択中';
+            } else {
+                btn.classList.replace('bg-indigo-500', 'bg-slate-200');
+                btn.classList.replace('text-white', 'text-slate-700');
+                text.innerText = '選択モード';
+            }
+        }
+
+        function toggleHandMode(forceValue = null) {
+            const nextValue = typeof forceValue === 'boolean' ? forceValue : !state.isHandMode;
+            state.isHandMode = nextValue;
+            if (state.isHandMode) {
+                if (state.isConnecting) toggleConnectMode();
+                if (state.isEditingEdges) toggleEdgeEditMode();
+                if (state.isSelectingItems) toggleSelectionMode(false);
+            }
+            updateHandModeUI();
+        }
+
+        function toggleSelectionMode(forceValue = null) {
+            const nextValue = typeof forceValue === 'boolean' ? forceValue : !state.isSelectingItems;
+            state.isSelectingItems = nextValue;
+            if (state.isSelectingItems) {
+                if (state.isConnecting) toggleConnectMode();
+                if (state.isEditingEdges) toggleEdgeEditMode();
+                if (state.isHandMode) toggleHandMode(false);
+            }
+            updateSelectionModeUI();
+        }
+
         // --- 保存・読込 ---
         function saveToLocalStorage() {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
@@ -975,8 +1313,9 @@
                 edges: state.edges,
                 groups: state.groups,
                 memos: state.memos,
+                itemGroups: state.itemGroups,
                 background: state.background,
-                nextNodeId, nextEdgeId, nextMemoId, nextGroupId,
+                nextNodeId, nextEdgeId, nextMemoId, nextGroupId, nextItemGroupId,
                 transform: state.transform
             }));
         }
@@ -996,12 +1335,14 @@
                     state.edges = data.edges || [];
                     state.groups = data.groups || [];
                     state.memos = data.memos || [];
+                    state.itemGroups = data.itemGroups || [];
                     state.background = data.background || { type: 'dot', color: '#f8fafc' };
                     
                     // 互換性確保
                     state.nodes.forEach(n => {
                         n.status = normalizeNodeStatus(n.status);
                         if(n.memo === undefined) n.memo = '';
+                        if(n.locked === undefined) n.locked = false;
                         if(n.showStatusBadge === undefined) n.showStatusBadge = true;
                         if(n.showNameLabel === undefined) n.showNameLabel = true;
                         if(!n.labelBgColor) n.labelBgColor = '#ffffff';
@@ -1013,6 +1354,9 @@
                         if(!e.style) e.style = 'solid';
                         if(e.width === undefined) e.width = 3;
                     });
+                    state.groups.forEach(g => {
+                        if(g.locked === undefined) g.locked = false;
+                    });
                     state.memos.forEach(m => {
                         if(m.text === undefined) m.text = '';
                         if(!m.color) m.color = '#fef3c7';
@@ -1023,12 +1367,14 @@
                         if(m.fontSize === undefined) m.fontSize = 13;
                         if(m.width === undefined) m.width = 200;
                         if(m.height === undefined) m.height = 140;
+                        if(m.locked === undefined) m.locked = false;
                     });
 
                     nextNodeId = data.nextNodeId || 1;
                     nextEdgeId = data.nextEdgeId || 1;
                     nextMemoId = data.nextMemoId || 1;
                     nextGroupId = data.nextGroupId || 1;
+                    nextItemGroupId = data.nextItemGroupId || 1;
                     if(data.transform) state.transform = data.transform;
                     return true;
                 } catch(e) { console.error(e); }
@@ -1047,6 +1393,9 @@
             
             renderAll();
             updateViewportTransform();
+            updateHandModeUI();
+            updateSelectionModeUI();
+            renderItemGroupPanel();
             pushHistory(); // 初期状態を履歴に保存
 
             // イベントリスナー
@@ -1068,6 +1417,11 @@
             
             document.getElementById('btnToggleConnect').addEventListener('click', toggleConnectMode);
             document.getElementById('btnToggleEdgeEdit').addEventListener('click', toggleEdgeEditMode);
+            document.getElementById('btnToggleHandMode').addEventListener('click', () => toggleHandMode());
+            document.getElementById('btnToggleSelectionMode').addEventListener('click', () => toggleSelectionMode());
+            document.getElementById('btnToggleItemGroupPanel').addEventListener('click', toggleItemGroupPanel);
+            document.getElementById('btnCreateItemGroup').addEventListener('click', createItemGroupFromSelection);
+            document.getElementById('btnClearItemSelection').addEventListener('click', clearSelectedItems);
             
             document.getElementById('btnClearData').addEventListener('click', () => {
                 if(confirm("すべての配置データとキャラを初期化しますか？")) {
@@ -1132,6 +1486,7 @@
             renderMemos();
             renderNodes();
             renderEdges();
+            renderItemGroupPanel();
         }
 
         // --- 背景処理 ---
@@ -1164,13 +1519,14 @@
         // --- JSON入出力 ---
         function exportToJson() {
             const dataStr = JSON.stringify({
-                nodes: state.nodes, edges: state.edges, groups: state.groups, memos: state.memos, background: state.background,
-                nextNodeId, nextEdgeId, nextMemoId, nextGroupId, transform: state.transform
+                nodes: state.nodes, edges: state.edges, groups: state.groups, memos: state.memos, itemGroups: state.itemGroups, background: state.background,
+                nextNodeId, nextEdgeId, nextMemoId, nextGroupId, nextItemGroupId, transform: state.transform
             }, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = 'trpg_diagram_data.json';
+            const dateStr = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+            a.href = url; a.download = `trpg_diagram_data_${dateStr}.json`;
             a.click(); URL.revokeObjectURL(url);
         }
 
@@ -1423,9 +1779,7 @@
         function handleWorkspaceMouseDown(e) {
             if (e.target === document.getElementById('workspace') || e.target.id === 'viewport' || e.target.tagName === 'svg' || e.target.id === 'groupLayer') {
                 if (state.isConnecting) { toggleConnectMode(); return; }
-                state.isPanning = true;
-                state.panStartX = e.clientX - state.transform.x;
-                state.panStartY = e.clientY - state.transform.y;
+                startPanning(e.clientX, e.clientY);
             }
         }
 
@@ -1626,6 +1980,7 @@
                 y,
                 name,
                 status: 'normal',
+                locked: false,
                 memo: '',
                 image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + id,
                 showStatusBadge: true,
@@ -1661,9 +2016,24 @@
                 el.id = node.id;
                 el.style.left = `${node.x}px`; el.style.top = `${node.y}px`;
                 el.style.transform = 'translate(-50%, -50%)';
+                const activeKeys = getActiveItemGroupKeys();
+                const isActiveGroupItem = activeKeys ? activeKeys.has(makeItemKey('node', node.id)) : false;
+                if (activeKeys && !isActiveGroupItem) el.style.opacity = '0.28';
+                if (isItemSelected('node', node.id)) el.style.filter = 'drop-shadow(0 0 0.45rem rgba(79, 70, 229, 0.4))';
 
                 el.addEventListener('mousedown', (e) => {
-                    if (state.isConnecting || state.isEditingEdges || e.button !== 0) return;
+                    if (e.button !== 0) return;
+                    if (state.isSelectingItems) {
+                        e.stopPropagation();
+                        toggleSelectedItemAndRender('node', node.id);
+                        return;
+                    }
+                    if (state.isHandMode) {
+                        e.stopPropagation();
+                        startPanning(e.clientX, e.clientY);
+                        return;
+                    }
+                    if (state.isConnecting || state.isEditingEdges || node.locked) return;
                     e.stopPropagation();
                     state.draggedNodeId = node.id;
                     const lp = getLocalPos(e.clientX, e.clientY);
@@ -1672,7 +2042,7 @@
                 
                 // ダブルクリックで編集
                 el.addEventListener('dblclick', (e) => {
-                    if (!state.isConnecting && !state.isEditingEdges) {
+                    if (!state.isHandMode && !state.isConnecting && !state.isEditingEdges && !state.isSelectingItems) {
                         e.stopPropagation();
                         openNodeModal(node.id);
                     }
@@ -1701,6 +2071,8 @@
                         { label: '編集', onSelect: () => openNodeModal(node.id) },
                         { label: '複製', onSelect: () => { createNodeFromData(node, node.x + 40, node.y + 40); commitChange(); } },
                         { label: 'コピー', onSelect: () => setClipboardItem('node', node) },
+                        { label: isItemSelected('node', node.id) ? '選択から外す' : 'グループ選択に追加', onSelect: () => toggleSelectedItemAndRender('node', node.id) },
+                        { label: node.locked ? 'キャラのロック解除' : 'キャラをロック', onSelect: () => { node.locked = !node.locked; commitChange(); renderNodes(); } },
                         { type: 'separator' },
                         { label: '削除', danger: true, onSelect: () => deleteNodeById(node.id) }
                     ], { type: 'node', id: node.id });
@@ -1708,6 +2080,7 @@
 
                 const imgContainer = document.createElement('div');
                 imgContainer.className = 'node-image-container';
+                if (node.locked) imgContainer.style.outline = '2px solid rgba(15, 23, 42, 0.72)';
                 const statusKey = normalizeNodeStatus(node.status);
                 if (statusKey !== 'normal') {
                     imgContainer.classList.add(`status-${statusKey}`);
@@ -1741,7 +2114,7 @@
                 editBtn.addEventListener('mousedown', e => e.stopPropagation());
                 editBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if(!state.isConnecting) openNodeModal(node.id);
+                    if(!state.isHandMode && !state.isConnecting) openNodeModal(node.id);
                 });
 
                 el.appendChild(imgContainer);
@@ -1753,7 +2126,7 @@
 
         function addGroup(x, y) {
             state.groups.push({
-                id: 'group_' + nextGroupId++, x, y, width: 300, height: 200, label: '新しい枠', color: '#94a3b8'
+                id: 'group_' + nextGroupId++, x, y, width: 300, height: 200, label: '新しい枠', color: '#94a3b8', locked: false
             });
             renderGroups();
         }
@@ -1763,7 +2136,8 @@
                 ...cloneData(data),
                 id: 'group_' + nextGroupId++,
                 x,
-                y
+                y,
+                locked: data.locked ?? false
             };
             state.groups.push(group);
             renderGroups();
@@ -1780,6 +2154,11 @@
                 box.style.left = `${g.x}px`; box.style.top = `${g.y}px`;
                 box.style.width = `${g.width}px`; box.style.height = `${g.height}px`;
                 box.style.borderColor = g.color;
+                const activeKeys = getActiveItemGroupKeys();
+                const isActiveGroupItem = activeKeys ? activeKeys.has(makeItemKey('group', g.id)) : false;
+                if (activeKeys && !isActiveGroupItem) box.style.opacity = '0.2';
+                if (isItemSelected('group', g.id)) box.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.25)';
+                if (g.locked) box.style.borderStyle = 'solid';
                 
                 // 背景色は透明度を持たせる
                 const hex = g.color.replace('#', '');
@@ -1789,7 +2168,18 @@
                 box.style.backgroundColor = `rgba(${r},${g_c},${b},0.05)`;
 
                 box.addEventListener('mousedown', e => {
-                    if (e.button !== 0 || state.isConnecting || state.isEditingEdges) return;
+                    if (e.button !== 0) return;
+                    if (state.isSelectingItems) {
+                        e.stopPropagation();
+                        toggleSelectedItemAndRender('group', g.id);
+                        return;
+                    }
+                    if (state.isHandMode) {
+                        e.stopPropagation();
+                        startPanning(e.clientX, e.clientY);
+                        return;
+                    }
+                    if (state.isConnecting || state.isEditingEdges || g.locked) return;
                     // ドラッグ領域判定（ラベルやリサイズ以外）
                     if (e.target === box) {
                         e.stopPropagation();
@@ -1806,6 +2196,8 @@
                         { label: '枠を編集', onSelect: () => openGroupModal(g.id) },
                         { label: '枠を複製', onSelect: () => { createGroupFromData(g, g.x + 30, g.y + 30); commitChange(); } },
                         { label: '枠をコピー', onSelect: () => setClipboardItem('group', g) },
+                        { label: isItemSelected('group', g.id) ? '選択から外す' : 'グループ選択に追加', onSelect: () => toggleSelectedItemAndRender('group', g.id) },
+                        { label: g.locked ? '枠のロック解除' : '枠をロック', onSelect: () => { g.locked = !g.locked; commitChange(); renderGroups(); } },
                         { type: 'separator' },
                         { label: '枠を削除', danger: true, onSelect: () => deleteGroupById(g.id) }
                     ], { type: 'group', id: g.id });
@@ -1817,6 +2209,7 @@
                 label.style.color = g.color;
                 label.addEventListener('mousedown', e => e.stopPropagation());
                 label.addEventListener('click', e => {
+                    if (state.isHandMode || state.isSelectingItems) return;
                     e.stopPropagation();
                     openGroupModal(g.id);
                 });
@@ -1825,6 +2218,12 @@
                 resize.className = 'group-resize-handle';
                 resize.style.borderColor = g.color;
                 resize.addEventListener('mousedown', e => {
+                    if (state.isHandMode) {
+                        e.stopPropagation();
+                        startPanning(e.clientX, e.clientY);
+                        return;
+                    }
+                    if (g.locked) return;
                     e.stopPropagation();
                     state.resizingGroupId = g.id;
                     const lp = getLocalPos(e.clientX, e.clientY);
@@ -1849,7 +2248,8 @@
                 roundness: 10,
                 alignX: 'center',
                 alignY: 'center',
-                fontSize: 13
+                fontSize: 13,
+                locked: false
             });
             renderMemos();
         }
@@ -1859,7 +2259,8 @@
                 ...cloneData(data),
                 id: 'memo_' + nextMemoId++,
                 x,
-                y
+                y,
+                locked: data.locked ?? false
             };
             state.memos.push(memo);
             renderMemos();
@@ -1943,6 +2344,10 @@
                 el.style.zIndex = 15;
                 el.style.userSelect = 'none';
                 el.style.overflow = 'visible';
+                const activeKeys = getActiveItemGroupKeys();
+                const isActiveGroupItem = activeKeys ? activeKeys.has(makeItemKey('memo', m.id)) : false;
+                if (activeKeys && !isActiveGroupItem) el.style.opacity = '0.22';
+                if (isItemSelected('memo', m.id)) el.style.filter = 'drop-shadow(0 0 0.45rem rgba(79, 70, 229, 0.4))';
 
                 const content = document.createElement('div');
                 content.className = 'memo-content';
@@ -1963,7 +2368,18 @@
                 content.style.overflow = 'hidden';
 
                 el.addEventListener('mousedown', e => {
-                    if (e.button !== 0 || state.isConnecting || state.isEditingEdges) return;
+                    if (e.button !== 0) return;
+                    if (state.isSelectingItems) {
+                        e.stopPropagation();
+                        toggleSelectedItemAndRender('memo', m.id);
+                        return;
+                    }
+                    if (state.isHandMode) {
+                        e.stopPropagation();
+                        startPanning(e.clientX, e.clientY);
+                        return;
+                    }
+                    if (state.isConnecting || state.isEditingEdges || m.locked) return;
                     if (e.target.closest('.memo-resize-handle')) return;
                     e.stopPropagation();
                     state.draggedMemoId = m.id;
@@ -1973,6 +2389,7 @@
                 });
 
                 el.addEventListener('dblclick', e => {
+                    if (state.isHandMode) return;
                     e.stopPropagation();
                     if (!state.isConnecting) openMemoModal(m.id);
                 });
@@ -1984,6 +2401,8 @@
                         { label: 'メモを編集', onSelect: () => openMemoModal(m.id) },
                         { label: 'メモを複製', onSelect: () => { createMemoFromData(m, m.x + 30, m.y + 30); commitChange(); } },
                         { label: 'メモをコピー', onSelect: () => setClipboardItem('memo', m) },
+                        { label: isItemSelected('memo', m.id) ? '選択から外す' : 'グループ選択に追加', onSelect: () => toggleSelectedItemAndRender('memo', m.id) },
+                        { label: m.locked ? 'メモのロック解除' : 'メモをロック', onSelect: () => { m.locked = !m.locked; commitChange(); renderMemos(); } },
                         { type: 'separator' },
                         { label: 'メモを削除', danger: true, onSelect: () => deleteMemoById(m.id) }
                     ], { type: 'memo', id: m.id });
@@ -2021,6 +2440,12 @@
                     resize.style.cursor = style.cursor;
                     Object.assign(resize.style, style);
                     resize.addEventListener('mousedown', e => {
+                        if (state.isHandMode) {
+                            e.stopPropagation();
+                            startPanning(e.clientX, e.clientY);
+                            return;
+                        }
+                        if (m.locked) return;
                         e.stopPropagation();
                         state.resizingMemoId = m.id;
                         state.resizingMemoCorner = corner;
@@ -2081,11 +2506,13 @@
             svgLayer.innerHTML = '<defs id="svgDefs"></defs>';
             const elementsLayer = document.getElementById('elementsLayer');
             elementsLayer.querySelectorAll('.edge-label, .waypoint-handle, .waypoint-add-handle').forEach(el => el.remove());
+            const activeNodeIds = getActiveNodeIdsForGroup();
 
             state.edges.forEach(edge => {
                 const sn = state.nodes.find(n => n.id === edge.sourceId);
                 const tn = state.nodes.find(n => n.id === edge.targetId);
                 if (!sn || !tn) return;
+                const isActiveEdge = activeNodeIds ? (activeNodeIds.has(edge.sourceId) && activeNodeIds.has(edge.targetId)) : true;
 
                 const pts = [{ x: sn.x, y: sn.y }, ...edge.waypoints, { x: tn.x, y: tn.y }];
 
@@ -2119,6 +2546,9 @@
                 path.setAttribute('stroke', edge.color);
                 path.setAttribute('stroke-width', edge.width || 3);
                 path.setAttribute('fill', 'none');
+                if (activeNodeIds && !isActiveEdge) {
+                    path.setAttribute('stroke-opacity', '0.08');
+                }
                 
                 // 線のスタイル
                 if (edge.style === 'dashed') {
@@ -2130,7 +2560,7 @@
                     path.setAttribute('stroke-linecap', 'round');
                 }
                 
-                if (edge.hasArrow) path.setAttribute('marker-end', ensureMarker(edge.color));
+                if (edge.hasArrow && (!activeNodeIds || isActiveEdge)) path.setAttribute('marker-end', ensureMarker(edge.color));
                 svgLayer.appendChild(path);
 
                 path.addEventListener('contextmenu', e => {
@@ -2162,16 +2592,25 @@
                 labelContainer.style.left = `${midX + edge.labelOffset.x}px`;
                 labelContainer.style.top = `${midY + edge.labelOffset.y}px`;
                 labelContainer.style.color = edge.color; labelContainer.style.borderColor = edge.color;
+                if (activeNodeIds && !isActiveEdge) {
+                    labelContainer.style.opacity = '0.12';
+                }
                 
                 const span = document.createElement('span'); span.innerText = edge.label;
                 const editBtn = document.createElement('button');
                 editBtn.className = 'ml-1 p-0.5 rounded text-slate-400 hover:bg-slate-100 cursor-pointer';
                 editBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>';
                 editBtn.addEventListener('mousedown', e => e.stopPropagation());
-                editBtn.addEventListener('click', e => { e.stopPropagation(); if(!state.isConnecting && !state.isEditingEdges) openEdgeModal(edge.id); });
+                editBtn.addEventListener('click', e => { e.stopPropagation(); if(!state.isHandMode && !state.isConnecting && !state.isEditingEdges) openEdgeModal(edge.id); });
 
                 labelContainer.addEventListener('mousedown', e => {
-                    if (state.isConnecting || state.isEditingEdges || e.button !== 0) return;
+                    if (e.button !== 0) return;
+                    if (state.isHandMode) {
+                        e.stopPropagation();
+                        startPanning(e.clientX, e.clientY);
+                        return;
+                    }
+                    if (state.isConnecting || state.isEditingEdges) return;
                     e.stopPropagation();
                     state.draggedLabelId = edge.id;
                     const lp = getLocalPos(e.clientX, e.clientY);
@@ -2263,20 +2702,23 @@
         function deleteNodeById(id) {
             state.edges = state.edges.filter(e => e.sourceId !== id && e.targetId !== id);
             state.nodes = state.nodes.filter(n => n.id !== id);
+            removeItemReferencesFromItemGroups('node', id);
             commitChange();
             renderAll();
         }
 
         function deleteGroupById(id) {
             state.groups = state.groups.filter(g => g.id !== id);
+            removeItemReferencesFromItemGroups('group', id);
             commitChange();
-            renderGroups();
+            renderAll();
         }
 
         function deleteMemoById(id) {
             state.memos = state.memos.filter(m => m.id !== id);
+            removeItemReferencesFromItemGroups('memo', id);
             commitChange();
-            renderMemos();
+            renderAll();
         }
 
         function deleteEdgeById(id) {
@@ -2306,6 +2748,8 @@
                 { label: '枠を追加', onSelect: () => { addGroup(localPos.x - 150, localPos.y - 100); commitChange(); } },
                 { label: 'メモ追加', onSelect: () => { addMemo(localPos.x - 110, localPos.y - 70); commitChange(); } },
                 { type: 'separator' },
+                { label: state.isHandMode ? 'ハンドモードを終了' : 'ハンドモードにする', onSelect: () => toggleHandMode() },
+                { label: state.isSelectingItems ? '選択モードを終了' : '選択モードにする', onSelect: () => toggleSelectionMode() },
                 { label: state.isConnecting ? '接続モードを終了' : '線をつなぐモード', onSelect: () => toggleConnectMode() },
                 { label: state.isEditingEdges ? '線を曲げるモードを終了' : '線を曲げるモード', onSelect: () => toggleEdgeEditMode() }
             ], { type: 'workspace', x: localPos.x, y: localPos.y });
