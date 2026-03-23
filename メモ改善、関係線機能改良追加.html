@@ -82,79 +82,19 @@
 
         .node-status {
             position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: -4px;
+            left: -4px;
             background: white;
             border: 2px solid #e2e8f0;
-            border-radius: 999px;
-            min-width: 44px;
-            height: 24px;
-            padding: 0 8px;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
-            font-weight: 700;
-            line-height: 1;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.14);
+            font-size: 18px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             z-index: 25;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
-        .node-image-container.status-dead .node-img {
-            filter: grayscale(0.15) sepia(0.45) saturate(1.3) hue-rotate(-20deg) brightness(0.9);
-        }
-        .node-image-container.status-dead::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(220, 38, 38, 0.34);
-            pointer-events: none;
-        }
-        .node-image-container.status-missing .node-img {
-            filter: grayscale(1) contrast(1.05) brightness(0.95);
-        }
-        .node-image-container.status-injured .node-img {
-            filter: saturate(0.9) brightness(0.9) contrast(1.08);
-        }
-        .node-image-container.status-injured::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(185, 28, 28, 0.18);
-            pointer-events: none;
-        }
-        .node-image-container.status-restrained .node-img {
-            filter: saturate(0.75) hue-rotate(175deg) brightness(0.92);
-        }
-        .node-image-container.status-restrained::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(37, 99, 235, 0.18);
-            pointer-events: none;
-        }
-        .node-image-container.status-insane .node-img {
-            filter: saturate(1.55) contrast(1.2) brightness(0.95);
-        }
-        .node-image-container.status-insane::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(168, 85, 247, 0.18));
-            pointer-events: none;
-        }
-        .node-image-container.status-hidden .node-img {
-            filter: blur(2px) grayscale(0.35) brightness(0.85);
-            transform: scale(1.05);
-        }
-        .node-image-container.status-hidden::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.18);
             pointer-events: none;
         }
 
@@ -213,6 +153,19 @@
             background: rgba(59, 130, 246, 0.9);
             border: 1px solid white;
             transform: translate(-50%, -50%) scale(1.3);
+        }
+
+        .orthogonal-handle {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: #0ea5e9;
+            border: 2px solid white;
+            border-radius: 6px;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            z-index: 20;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
 
         /* グループ枠のスタイル */
@@ -371,16 +324,8 @@
                 <input type="text" id="modalNodeName" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-600 mb-1">状態</label>
-                <select id="modalNodeStatus" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 bg-white">
-                    <option value="normal">通常</option>
-                    <option value="dead">死亡</option>
-                    <option value="missing">行方不明</option>
-                    <option value="injured">重傷</option>
-                    <option value="restrained">拘束</option>
-                    <option value="insane">発狂</option>
-                    <option value="hidden">秘匿</option>
-                </select>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">ステータス表示 (絵文字など)</label>
+                <input type="text" id="modalNodeStatus" placeholder="💀, 💔, 🚓 など (空で非表示)" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 text-center text-xl">
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-600 mb-1">詳細メモ (秘匿・設定など)</label>
@@ -418,6 +363,22 @@
                 <div class="flex-1">
                     <label class="block text-sm font-semibold text-slate-600 mb-1">太さ: <span id="valEdgeWidth">3</span></label>
                     <input type="range" id="modalEdgeWidth" min="1" max="5" value="3" class="w-full mt-2">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">曲げ方</label>
+                    <select id="modalEdgeRouteMode" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="free">自由</option>
+                        <option value="orthogonal">直角</option>
+                    </select>
+                </div>
+                <div id="edgeOrthogonalDirectionWrap">
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">直角の向き</label>
+                    <select id="modalEdgeOrthogonalDirection" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="horizontal">横→縦→横</option>
+                        <option value="vertical">縦→横→縦</option>
+                    </select>
                 </div>
             </div>
             <div class="flex items-center gap-2 pt-1">
@@ -580,28 +541,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.0/dist/html-to-image.min.js"></script>
     <script>
-        const NODE_STATUS_OPTIONS = {
-            normal: { label: '通常', badge: '' },
-            dead: { label: '死亡', badge: '死亡' },
-            missing: { label: '行方不明', badge: '不明' },
-            injured: { label: '重傷', badge: '重傷' },
-            restrained: { label: '拘束', badge: '拘束' },
-            insane: { label: '発狂', badge: '発狂' },
-            hidden: { label: '秘匿', badge: '秘匿' }
-        };
-
-        function normalizeNodeStatus(status) {
-            if (NODE_STATUS_OPTIONS[status]) return status;
-            if (!status) return 'normal';
-            if (status === '💀' || status === '死亡') return 'dead';
-            if (status === '❔' || status === '行方不明') return 'missing';
-            if (status === '重傷') return 'injured';
-            if (status === '拘束') return 'restrained';
-            if (status === '発狂') return 'insane';
-            if (status === '秘匿') return 'hidden';
-            return 'normal';
-        }
-
         // --- 状態管理 ---
         const LOCAL_STORAGE_KEY = 'trpg_diagram_data_v3';
 
@@ -617,6 +556,7 @@
             draggedNodeId: null,
             draggedMemoId: null,
             draggedWaypoint: null,
+            draggedOrthogonalHandle: null,
             draggedLabelId: null,
             draggedGroupId: null,
             resizingGroupId: null,
@@ -760,7 +700,7 @@
                     
                     // 互換性確保
                     state.nodes.forEach(n => {
-                        n.status = normalizeNodeStatus(n.status);
+                        if(n.status === undefined) n.status = '';
                         if(n.memo === undefined) n.memo = '';
                     });
                     state.edges.forEach(e => {
@@ -768,6 +708,8 @@
                         if(!e.labelOffset) e.labelOffset = { x: 0, y: 0 };
                         if(!e.style) e.style = 'solid';
                         if(e.width === undefined) e.width = 3;
+                        if(!e.routeMode) e.routeMode = 'free';
+                        if(!e.orthogonalDirection) e.orthogonalDirection = 'horizontal';
                     });
                     state.memos.forEach(m => {
                         if(m.text === undefined) m.text = '';
@@ -1197,7 +1139,7 @@
             const localPos = getLocalPos(e.clientX, e.clientY);
             currentMousePos = localPos;
 
-            if(state.draggedNodeId || state.draggedWaypoint || state.draggedLabelId || state.draggedGroupId || state.resizingGroupId || state.draggedMemoId || state.resizingMemoId) {
+            if(state.draggedNodeId || state.draggedWaypoint || state.draggedOrthogonalHandle || state.draggedLabelId || state.draggedGroupId || state.resizingGroupId || state.draggedMemoId || state.resizingMemoId) {
                 isDraggedSinceLastDown = true;
             }
 
@@ -1272,9 +1214,16 @@
             }
 
             if (state.draggedWaypoint) {
-                const { edge, index, offsetX = 0, offsetY = 0, displayOffsetX = 0, displayOffsetY = 0 } = state.draggedWaypoint;
-                edge.waypoints[index].x = localPos.x - offsetX - displayOffsetX;
-                edge.waypoints[index].y = localPos.y - offsetY - displayOffsetY;
+                const { edge, index, offsetX = 0, offsetY = 0 } = state.draggedWaypoint;
+                edge.waypoints[index].x = localPos.x - offsetX;
+                edge.waypoints[index].y = localPos.y - offsetY;
+                renderEdges();
+                return;
+            }
+
+            if (state.draggedOrthogonalHandle) {
+                const { edge, axis, offset = 0 } = state.draggedOrthogonalHandle;
+                edge.orthogonalSplit = axis === 'x' ? localPos.x - offset : localPos.y - offset;
                 renderEdges();
                 return;
             }
@@ -1302,6 +1251,7 @@
             isDraggedSinceLastDown = false;
             state.draggedNodeId = null;
             state.draggedWaypoint = null;
+            state.draggedOrthogonalHandle = null;
             state.draggedLabelId = null;
             state.draggedGroupId = null;
             state.draggedMemoId = null;
@@ -1360,7 +1310,7 @@
         // --- 要素の追加と描画 ---
         function addNode(x, y, name) {
             const id = 'node_' + nextNodeId++;
-            state.nodes.push({ id, x, y, name, status: 'normal', memo: '', image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + id });
+            state.nodes.push({ id, x, y, name, status: '', memo: '', image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + id });
             renderNodes();
             renderEdges();
         }
@@ -1410,21 +1360,16 @@
 
                 const imgContainer = document.createElement('div');
                 imgContainer.className = 'node-image-container';
-                const statusKey = normalizeNodeStatus(node.status);
-                if (statusKey !== 'normal') {
-                    imgContainer.classList.add(`status-${statusKey}`);
-                }
                 const img = document.createElement('img');
                 img.className = 'node-img'; img.src = node.image;
                 imgContainer.appendChild(img);
 
                 // ステータスバッジ
-                const statusMeta = NODE_STATUS_OPTIONS[statusKey] || NODE_STATUS_OPTIONS.normal;
-                if (statusMeta.badge) {
+                if (node.status && node.status.trim() !== '') {
                     const statusDiv = document.createElement('div');
                     statusDiv.className = 'node-status';
-                    statusDiv.innerText = statusMeta.badge;
-                    el.appendChild(statusDiv);
+                    statusDiv.innerText = node.status;
+                    imgContainer.appendChild(statusDiv);
                 }
 
                 const nameDiv = document.createElement('div');
@@ -1693,7 +1638,8 @@
             if (state.edges.find(e => e.sourceId === sourceId && e.targetId === targetId)) return;
             state.edges.push({
                 id: 'edge_' + nextEdgeId++, sourceId, targetId, label: '関係性', color: '#94a3b8',
-                hasArrow: true, waypoints: [], labelOffset: { x: 0, y: 0 }, style: 'solid', width: 3
+                hasArrow: true, waypoints: [], labelOffset: { x: 0, y: 0 }, style: 'solid', width: 3,
+                routeMode: 'free', orthogonalDirection: 'horizontal'
             });
         }
 
@@ -1727,16 +1673,16 @@
             const svgLayer = document.getElementById('svgLayer');
             svgLayer.innerHTML = '<defs id="svgDefs"></defs>';
             const elementsLayer = document.getElementById('elementsLayer');
-            elementsLayer.querySelectorAll('.edge-label, .waypoint-handle, .waypoint-add-handle').forEach(el => el.remove());
+            elementsLayer.querySelectorAll('.edge-label, .waypoint-handle, .waypoint-add-handle, .orthogonal-handle').forEach(el => el.remove());
 
             state.edges.forEach(edge => {
                 const sn = state.nodes.find(n => n.id === edge.sourceId);
                 const tn = state.nodes.find(n => n.id === edge.targetId);
                 if (!sn || !tn) return;
 
-                const pts = [{ x: sn.x, y: sn.y }, ...edge.waypoints, { x: tn.x, y: tn.y }];
+                const pts = getEdgePoints(edge, sn, tn);
 
-                const hasReverse = state.edges.some(e => e.sourceId === edge.targetId && e.targetId === edge.sourceId && e.waypoints.length === 0);
+                const hasReverse = edge.routeMode !== 'orthogonal' && state.edges.some(e => e.sourceId === edge.targetId && e.targetId === edge.sourceId && e.waypoints.length === 0);
                 if (pts.length === 2 && hasReverse) {
                     const dx = pts[1].x - pts[0].x, dy = pts[1].y - pts[0].y;
                     const len = Math.hypot(dx, dy);
@@ -1825,39 +1771,55 @@
 
                 // 中継点
                 if (state.isEditingEdges) {
-                    edge.waypoints.forEach((wp, index) => {
-                        const h = document.createElement('div');
-                        h.className = 'waypoint-handle'; h.style.left = `${wp.x}px`; h.style.top = `${wp.y}px`;
-                        h.addEventListener('mousedown', e => {
+                    if (edge.routeMode === 'orthogonal') {
+                        const handle = document.createElement('div');
+                        const orthogonalDirection = getOrthogonalDirection(edge, sn, tn);
+                        const p1 = pts[1];
+                        const p2 = pts[2];
+                        handle.className = 'orthogonal-handle';
+                        handle.style.left = `${(p1.x + p2.x) / 2}px`;
+                        handle.style.top = `${(p1.y + p2.y) / 2}px`;
+                        handle.style.cursor = orthogonalDirection === 'horizontal' ? 'ew-resize' : 'ns-resize';
+                        handle.addEventListener('mousedown', e => {
                             e.stopPropagation();
                             const lp = getLocalPos(e.clientX, e.clientY);
-                            state.draggedWaypoint = {
+                            state.draggedOrthogonalHandle = {
                                 edge,
-                                index,
-                                offsetX: lp.x - wp.x,
-                                offsetY: lp.y - wp.y
+                                axis: orthogonalDirection === 'horizontal' ? 'x' : 'y',
+                                offset: orthogonalDirection === 'horizontal' ? lp.x - p1.x : lp.y - p1.y
                             };
                         });
-                        h.addEventListener('dblclick', e => { e.stopPropagation(); edge.waypoints.splice(index, 1); commitChange(); renderEdges(); });
-                        elementsLayer.appendChild(h);
-                    });
-                    for (let i = 0; i < pts.length - 1; i++) {
-                        const cx = (pts[i].x + pts[i+1].x)/2, cy = (pts[i].y + pts[i+1].y)/2;
-                        const addH = document.createElement('div');
-                        addH.className = 'waypoint-add-handle'; addH.style.left = `${cx}px`; addH.style.top = `${cy}px`;
-                        addH.addEventListener('mousedown', e => {
-                            e.stopPropagation();
-                            edge.waypoints.splice(i, 0, {x: cx, y: cy});
-                            const lp = getLocalPos(e.clientX, e.clientY);
-                            state.draggedWaypoint = {
-                                edge,
-                                index: i,
-                                offsetX: lp.x - cx,
-                                offsetY: lp.y - cy
-                            };
-                            renderEdges();
+                        elementsLayer.appendChild(handle);
+                    } else {
+                        edge.waypoints.forEach((wp, index) => {
+                            const h = document.createElement('div');
+                            h.className = 'waypoint-handle'; h.style.left = `${wp.x}px`; h.style.top = `${wp.y}px`;
+                            h.addEventListener('mousedown', e => {
+                                e.stopPropagation();
+                                const lp = getLocalPos(e.clientX, e.clientY);
+                                state.draggedWaypoint = {
+                                    edge,
+                                    index,
+                                    offsetX: lp.x - wp.x,
+                                    offsetY: lp.y - wp.y
+                                };
+                            });
+                            h.addEventListener('dblclick', e => { e.stopPropagation(); edge.waypoints.splice(index, 1); commitChange(); renderEdges(); });
+                            elementsLayer.appendChild(h);
                         });
-                        elementsLayer.appendChild(addH);
+                        for (let i = 0; i < pts.length - 1; i++) {
+                            const cx = (pts[i].x + pts[i+1].x)/2, cy = (pts[i].y + pts[i+1].y)/2;
+                            const addH = document.createElement('div');
+                            addH.className = 'waypoint-add-handle'; addH.style.left = `${cx}px`; addH.style.top = `${cy}px`;
+                            addH.addEventListener('mousedown', e => {
+                                e.stopPropagation();
+                                edge.waypoints.splice(i, 0, {x: cx, y: cy});
+                                const lp = getLocalPos(e.clientX, e.clientY);
+                                state.draggedWaypoint = { edge, index: i, offsetX: lp.x - cx, offsetY: lp.y - cy };
+                                renderEdges();
+                            });
+                            elementsLayer.appendChild(addH);
+                        }
                     }
                 }
             });
@@ -1874,6 +1836,38 @@
                     svgLayer.appendChild(tempLine);
                 }
             }
+        }
+
+        function getOrthogonalDirection(edge, sourceNode, targetNode) {
+            if (edge.orthogonalDirection === 'horizontal' || edge.orthogonalDirection === 'vertical') {
+                return edge.orthogonalDirection;
+            }
+            return Math.abs(targetNode.x - sourceNode.x) >= Math.abs(targetNode.y - sourceNode.y) ? 'horizontal' : 'vertical';
+        }
+
+        function getEdgePoints(edge, sourceNode, targetNode) {
+            if (edge.routeMode === 'orthogonal') {
+                const direction = getOrthogonalDirection(edge, sourceNode, targetNode);
+                if (direction === 'horizontal') {
+                    const splitX = typeof edge.orthogonalSplit === 'number' ? edge.orthogonalSplit : (sourceNode.x + targetNode.x) / 2;
+                    return [
+                        { x: sourceNode.x, y: sourceNode.y },
+                        { x: splitX, y: sourceNode.y },
+                        { x: splitX, y: targetNode.y },
+                        { x: targetNode.x, y: targetNode.y }
+                    ];
+                }
+
+                const splitY = typeof edge.orthogonalSplit === 'number' ? edge.orthogonalSplit : (sourceNode.y + targetNode.y) / 2;
+                return [
+                    { x: sourceNode.x, y: sourceNode.y },
+                    { x: sourceNode.x, y: splitY },
+                    { x: targetNode.x, y: splitY },
+                    { x: targetNode.x, y: targetNode.y }
+                ];
+            }
+
+            return [{ x: sourceNode.x, y: sourceNode.y }, ...edge.waypoints, { x: targetNode.x, y: targetNode.y }];
         }
 
         // --- モーダル管理 ---
@@ -1954,6 +1948,7 @@
             document.getElementById('modalEdgeWidth').addEventListener('input', e => {
                 document.getElementById('valEdgeWidth').innerText = e.target.value;
             });
+            document.getElementById('modalEdgeRouteMode').addEventListener('change', updateEdgeRouteControls);
 
             // 画像出力設定モーダルのイベント
             const exportFormatRadios = document.querySelectorAll('input[name="exportFormat"]');
@@ -2079,7 +2074,7 @@
             editingNodeId = id;
             const n = state.nodes.find(x => x.id === id);
             document.getElementById('modalNodeName').value = n.name;
-            document.getElementById('modalNodeStatus').value = normalizeNodeStatus(n.status);
+            document.getElementById('modalNodeStatus').value = n.status || '';
             document.getElementById('modalNodeMemo').value = n.memo || '';
             document.getElementById('modalNodeImg').src = tempImageBase64 = n.image;
             openModalUI('nodeModal');
@@ -2089,7 +2084,7 @@
             if(n) {
                 const name = document.getElementById('modalNodeName').value.trim();
                 if(name) n.name = name;
-                n.status = normalizeNodeStatus(document.getElementById('modalNodeStatus').value);
+                n.status = document.getElementById('modalNodeStatus').value.trim();
                 n.memo = document.getElementById('modalNodeMemo').value;
                 n.image = tempImageBase64;
                 commitChange(); renderNodes();
@@ -2152,6 +2147,9 @@
             document.getElementById('modalEdgeStyle').value = e.style || 'solid';
             document.getElementById('modalEdgeWidth').value = e.width || 3;
             document.getElementById('valEdgeWidth').innerText = e.width || 3;
+            document.getElementById('modalEdgeRouteMode').value = e.routeMode || 'free';
+            document.getElementById('modalEdgeOrthogonalDirection').value = e.orthogonalDirection || 'horizontal';
+            updateEdgeRouteControls();
             editingEdgeColor = e.color;
             renderColorSelector('colorSelector', editingEdgeColor, c => editingEdgeColor = c);
             openModalUI('edgeModal');
@@ -2165,9 +2163,32 @@
                 e.hasArrow = document.getElementById('modalEdgeArrow').checked;
                 e.style = document.getElementById('modalEdgeStyle').value;
                 e.width = parseInt(document.getElementById('modalEdgeWidth').value, 10);
+                const prevRouteMode = e.routeMode || 'free';
+                const prevOrthogonalDirection = e.orthogonalDirection || 'horizontal';
+                e.routeMode = document.getElementById('modalEdgeRouteMode').value;
+                e.orthogonalDirection = document.getElementById('modalEdgeOrthogonalDirection').value;
+                if (e.routeMode === 'orthogonal' && (
+                    prevRouteMode !== 'orthogonal' ||
+                    prevOrthogonalDirection !== e.orthogonalDirection ||
+                    typeof e.orthogonalSplit !== 'number'
+                )) {
+                    const sn = state.nodes.find(n => n.id === e.sourceId);
+                    const tn = state.nodes.find(n => n.id === e.targetId);
+                    if (sn && tn) {
+                        e.orthogonalSplit = e.orthogonalDirection === 'horizontal'
+                            ? (sn.x + tn.x) / 2
+                            : (sn.y + tn.y) / 2;
+                    }
+                }
                 commitChange(); renderEdges();
             }
             closeModal();
+        }
+
+        function updateEdgeRouteControls() {
+            const routeMode = document.getElementById('modalEdgeRouteMode').value;
+            const directionWrap = document.getElementById('edgeOrthogonalDirectionWrap');
+            directionWrap.style.display = routeMode === 'orthogonal' ? '' : 'none';
         }
         function deleteEdge() {
             state.edges = state.edges.filter(e => e.id !== editingEdgeId);
