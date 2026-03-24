@@ -2167,6 +2167,7 @@
                 itemGroups: state.itemGroups,
                 displayOrder: state.displayOrder,
                 background: state.background,
+                transform: state.transform,
                 nextNodeId, nextEdgeId, nextMemoId, nextGroupId, nextItemGroupId
             });
             
@@ -2202,13 +2203,20 @@
         }
 
         function restoreState(data) {
-            state.nodes = JSON.parse(JSON.stringify(data.nodes));
-            state.edges = JSON.parse(JSON.stringify(data.edges));
-            state.groups = JSON.parse(JSON.stringify(data.groups));
+            state.nodes = JSON.parse(JSON.stringify(data.nodes || []));
+            state.edges = JSON.parse(JSON.stringify(data.edges || []));
+            state.groups = JSON.parse(JSON.stringify(data.groups || []));
             state.memos = JSON.parse(JSON.stringify(data.memos || []));
             state.itemGroups = JSON.parse(JSON.stringify(data.itemGroups || []));
             state.displayOrder = normalizeDisplayOrder(data.displayOrder, state.nodes, state.memos);
-            state.background = JSON.parse(JSON.stringify(data.background));
+            state.background = JSON.parse(JSON.stringify(data.background || { type: 'dot', color: '#f8fafc' }));
+            state.transform = data.transform && typeof data.transform === 'object'
+                ? {
+                    x: typeof data.transform.x === 'number' ? data.transform.x : 0,
+                    y: typeof data.transform.y === 'number' ? data.transform.y : 0,
+                    scale: typeof data.transform.scale === 'number' ? data.transform.scale : 1
+                }
+                : { x: 0, y: 0, scale: 1 };
             state.selectedItems = [];
             state.activeItemGroupId = null;
             state.nodes.forEach(n => {
@@ -2242,11 +2250,12 @@
                 if (m.height === undefined) m.height = 140;
                 if (m.locked === undefined) m.locked = false;
             });
-            nextNodeId = data.nextNodeId;
-            nextEdgeId = data.nextEdgeId;
-            nextMemoId = data.nextMemoId || 1;
-            nextGroupId = data.nextGroupId;
+            nextNodeId = data.nextNodeId || (state.nodes.length + 1);
+            nextEdgeId = data.nextEdgeId || (state.edges.length + 1);
+            nextMemoId = data.nextMemoId || (state.memos.length + 1);
+            nextGroupId = data.nextGroupId || (state.groups.length + 1);
             nextItemGroupId = data.nextItemGroupId || 1;
+            clearTransientInteractionState();
             renderAll();
         }
 
@@ -3209,11 +3218,17 @@
             reader.onload = function(event) {
                 try {
                     state.isDemoScene = false;
-                    restoreState(JSON.parse(event.target.result));
-                    commitChange();
+                    const parsed = JSON.parse(event.target.result);
+                    restoreState(parsed);
                     updateViewportTransform();
+                    pushHistory();
+                    updateUndoRedoUI();
+                    saveToLocalStorage();
                     alert('相関図データを読み込みました！');
-                } catch(err) { alert('ファイルの読み込みに失敗しました。'); }
+                } catch(err) {
+                    console.error(err);
+                    alert('ファイルの読み込みに失敗しました。');
+                }
                 jsonUploader.value = '';
             };
             reader.readAsText(file);
@@ -4363,7 +4378,7 @@
                 path.setAttribute('stroke-width', edge.width || 3);
                 path.setAttribute('fill', 'none');
                 if (activeNodeIds && !isActiveEdge) {
-                    path.setAttribute('stroke-opacity', '0.08');
+                    path.setAttribute('stroke-opacity', '0.04');
                 }
                 
                 // 線のスタイル
@@ -4409,7 +4424,8 @@
                 labelContainer.style.top = `${midY + edge.labelOffset.y}px`;
                 labelContainer.style.color = edge.color; labelContainer.style.borderColor = edge.color;
                 if (activeNodeIds && !isActiveEdge) {
-                    labelContainer.style.opacity = '0.12';
+                    labelContainer.style.opacity = '0.08';
+                    labelContainer.style.pointerEvents = 'none';
                 }
                 
                 const span = document.createElement('span'); span.innerText = edge.label;
@@ -4418,6 +4434,9 @@
                 editBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>';
                 editBtn.addEventListener('mousedown', e => e.stopPropagation());
                 editBtn.addEventListener('click', e => { e.stopPropagation(); if(!state.isHandMode && !state.isConnecting && !state.isEditingEdges) openEdgeModal(edge.id); });
+                if (activeNodeIds && !isActiveEdge) {
+                    editBtn.style.opacity = '0.08';
+                }
 
                 labelContainer.addEventListener('mousedown', e => {
                     if (e.button !== 0) return;
@@ -4812,9 +4831,11 @@
                 n.labelTextColor = document.getElementById('modalNodeLabelColor').value;
                 n.memo = document.getElementById('modalNodeMemo').value;
                 n.image = tempImageBase64;
-                closeModal(true);
-                commitChange();
                 renderAll();
+                closeModal(true);
+                pushHistory();
+                updateUndoRedoUI();
+                saveToLocalStorage();
                 return;
             }
             closeModal(true);
