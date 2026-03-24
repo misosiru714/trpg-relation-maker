@@ -1383,6 +1383,10 @@
             padding: 6px;
             border-bottom: none;
         }
+        .item-group-panel.collapsed .item-group-panel-meta,
+        .item-group-panel.collapsed #btnCloseGroupList {
+            display: none;
+        }
         .item-group-panel.collapsed .item-group-title,
         .item-group-panel.collapsed #groupSelectionCount {
             display: none;
@@ -2056,6 +2060,7 @@
             draggedNodeId: null,
             draggedMemoId: null,
             draggedSelection: null,
+            pendingDrag: null,
             draggedWaypoint: null,
             draggedLabelId: null,
             draggedGroupId: null,
@@ -2151,6 +2156,7 @@
         let undoStack = [];
         let redoStack = [];
         let isDraggedSinceLastDown = false; // ドラッグが発生したかのフラグ
+        const DRAG_START_THRESHOLD = 4;
 
         function pushHistory() {
             const snapshot = JSON.stringify({
@@ -2205,6 +2211,37 @@
             state.background = JSON.parse(JSON.stringify(data.background));
             state.selectedItems = [];
             state.activeItemGroupId = null;
+            state.nodes.forEach(n => {
+                n.status = normalizeNodeStatus(n.status);
+                if (n.memo === undefined) n.memo = '';
+                if (n.locked === undefined) n.locked = false;
+                if (n.statusLabelOverride === undefined) n.statusLabelOverride = '';
+                if (n.showStatusBadge === undefined) n.showStatusBadge = true;
+                if (n.showNameLabel === undefined) n.showNameLabel = true;
+                if (!n.labelBgColor) n.labelBgColor = '#ffffff';
+                if (!n.labelTextColor) n.labelTextColor = '#333333';
+            });
+            state.edges.forEach(e => {
+                if (!e.waypoints) e.waypoints = [];
+                if (!e.labelOffset) e.labelOffset = { x: 0, y: 0 };
+                if (!e.style) e.style = 'solid';
+                if (e.width === undefined) e.width = 3;
+            });
+            state.groups.forEach(g => {
+                if (g.locked === undefined) g.locked = false;
+            });
+            state.memos.forEach(m => {
+                if (m.text === undefined) m.text = '';
+                if (!m.color) m.color = '#fef3c7';
+                if (m.corners === undefined) m.corners = 4;
+                if (m.roundness === undefined) m.roundness = 10;
+                if (m.alignX === undefined) m.alignX = 'center';
+                if (m.alignY === undefined) m.alignY = 'center';
+                if (m.fontSize === undefined) m.fontSize = 13;
+                if (m.width === undefined) m.width = 200;
+                if (m.height === undefined) m.height = 140;
+                if (m.locked === undefined) m.locked = false;
+            });
             nextNodeId = data.nextNodeId;
             nextEdgeId = data.nextEdgeId;
             nextMemoId = data.nextMemoId || 1;
@@ -2469,7 +2506,10 @@
             const includesTarget = items.some(item => item.type === type && item.id === id);
             if (!includesTarget || items.length <= 1) return false;
             const localPos = getLocalPos(clientX, clientY);
-            state.draggedSelection = {
+            state.pendingDrag = {
+                kind: 'selection',
+                startClientX: clientX,
+                startClientY: clientY,
                 startMouseX: localPos.x,
                 startMouseY: localPos.y,
                 items
@@ -2914,8 +2954,26 @@
             }));
         }
 
+        function clearTransientInteractionState() {
+            state.isPanning = false;
+            state.draggedNodeId = null;
+            state.draggedSelection = null;
+            state.pendingDrag = null;
+            state.draggedWaypoint = null;
+            state.draggedLabelId = null;
+            state.draggedGroupId = null;
+            state.draggedMemoId = null;
+            state.resizingGroupId = null;
+            state.resizingGroupStart = null;
+            state.resizingMemoId = null;
+            state.resizingMemoCorner = null;
+            state.resizingMemoStart = null;
+            isDraggedSinceLastDown = false;
+        }
+
         // 状態が変更される操作の完了時に呼ぶ
         function commitChange() {
+            clearTransientInteractionState();
             pushHistory();
             saveToLocalStorage();
         }
@@ -3074,6 +3132,7 @@
 
             const ws = document.getElementById('workspace');
             ws.addEventListener('mousedown', handleWorkspaceMouseDown);
+            ws.addEventListener('dragstart', (e) => e.preventDefault());
             ws.addEventListener('contextmenu', (e) => {
                 const target = e.target;
                 const tagName = target.tagName ? target.tagName.toLowerCase() : '';
@@ -3084,6 +3143,7 @@
             });
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
+            window.addEventListener('blur', handleMouseUp);
             ws.addEventListener('wheel', handleWheel, { passive: false });
             imageUploader.addEventListener('change', handleImageUpload);
 
@@ -3128,6 +3188,7 @@
 
         // --- JSON入出力 ---
         function exportToJson() {
+            clearTransientInteractionState();
             const dataStr = JSON.stringify({
                 nodes: state.nodes, edges: state.edges, groups: state.groups, memos: state.memos, itemGroups: state.itemGroups, background: state.background,
                 displayOrder: state.displayOrder,
@@ -3211,6 +3272,7 @@
         }
 
         async function exportToImage(options = {}) {
+            clearTransientInteractionState();
             const format = options.format || exportFormat || 'png';
             const quality = typeof options.quality === 'number' ? options.quality : exportJpegQuality;
             const btn = document.getElementById('btnExportImage');
@@ -3413,6 +3475,39 @@
         let currentMousePos = null;
 
         function handleMouseMove(e) {
+            const isDraggingSomething = state.isPanning || state.draggedNodeId || state.draggedSelection || state.draggedWaypoint || state.draggedLabelId || state.draggedGroupId || state.resizingGroupId || state.draggedMemoId || state.resizingMemoId;
+            if (isDraggingSomething && (e.buttons & 1) === 0) {
+                handleMouseUp();
+                return;
+            }
+
+            if (state.pendingDrag) {
+                const dx = e.clientX - state.pendingDrag.startClientX;
+                const dy = e.clientY - state.pendingDrag.startClientY;
+                if (Math.hypot(dx, dy) >= DRAG_START_THRESHOLD) {
+                    if (state.pendingDrag.kind === 'node') {
+                        state.draggedNodeId = state.pendingDrag.id;
+                        state.offsetX = state.pendingDrag.offsetX;
+                        state.offsetY = state.pendingDrag.offsetY;
+                    } else if (state.pendingDrag.kind === 'group') {
+                        state.draggedGroupId = state.pendingDrag.id;
+                        state.offsetX = state.pendingDrag.offsetX;
+                        state.offsetY = state.pendingDrag.offsetY;
+                    } else if (state.pendingDrag.kind === 'memo') {
+                        state.draggedMemoId = state.pendingDrag.id;
+                        state.offsetX = state.pendingDrag.offsetX;
+                        state.offsetY = state.pendingDrag.offsetY;
+                    } else if (state.pendingDrag.kind === 'selection') {
+                        state.draggedSelection = {
+                            startMouseX: state.pendingDrag.startMouseX,
+                            startMouseY: state.pendingDrag.startMouseY,
+                            items: state.pendingDrag.items
+                        };
+                    }
+                    state.pendingDrag = null;
+                }
+            }
+
             if (state.isPanning) {
                 state.transform.x = e.clientX - state.panStartX;
                 state.transform.y = e.clientY - state.panStartY;
@@ -3548,6 +3643,7 @@
             isDraggedSinceLastDown = false;
             state.draggedNodeId = null;
             state.draggedSelection = null;
+            state.pendingDrag = null;
             state.draggedWaypoint = null;
             state.draggedLabelId = null;
             state.draggedGroupId = null;
@@ -3661,6 +3757,7 @@
 
                 el.addEventListener('mousedown', (e) => {
                     if (e.button !== 0) return;
+                    e.preventDefault();
                     if (isMultiSelectShortcut(e)) {
                         e.stopPropagation();
                         toggleSelectedItemAndRender('node', node.id);
@@ -3687,9 +3784,15 @@
                         return;
                     }
                     e.stopPropagation();
-                    state.draggedNodeId = node.id;
                     const lp = getLocalPos(e.clientX, e.clientY);
-                    state.offsetX = lp.x - node.x; state.offsetY = lp.y - node.y;
+                    state.pendingDrag = {
+                        kind: 'node',
+                        id: node.id,
+                        startClientX: e.clientX,
+                        startClientY: e.clientY,
+                        offsetX: lp.x - node.x,
+                        offsetY: lp.y - node.y
+                    };
                 });
                 
                 // ダブルクリックで編集
@@ -3739,6 +3842,7 @@
                 }
                 const img = document.createElement('img');
                 img.className = 'node-img'; img.src = node.image;
+                img.draggable = false;
                 imgContainer.appendChild(img);
 
                 // ステータスバッジ
@@ -3849,9 +3953,15 @@
                     // ドラッグ領域判定（ラベルやリサイズ以外）
                     if (e.target === box) {
                         e.stopPropagation();
-                        state.draggedGroupId = g.id;
                         const lp = getLocalPos(e.clientX, e.clientY);
-                        state.offsetX = lp.x - g.x; state.offsetY = lp.y - g.y;
+                        state.pendingDrag = {
+                            kind: 'group',
+                            id: g.id,
+                            startClientX: e.clientX,
+                            startClientY: e.clientY,
+                            offsetX: lp.x - g.x,
+                            offsetY: lp.y - g.y
+                        };
                     }
                 });
 
@@ -4071,10 +4181,15 @@
                         return;
                     }
                     e.stopPropagation();
-                    state.draggedMemoId = m.id;
                     const lp = getLocalPos(e.clientX, e.clientY);
-                    state.offsetX = lp.x - m.x;
-                    state.offsetY = lp.y - m.y;
+                    state.pendingDrag = {
+                        kind: 'memo',
+                        id: m.id,
+                        startClientX: e.clientX,
+                        startClientY: e.clientY,
+                        offsetX: lp.x - m.x,
+                        offsetY: lp.y - m.y
+                    };
                 });
 
                 el.addEventListener('dblclick', e => {
@@ -4578,6 +4693,7 @@
         }
 
         function openModalUI(modalId) {
+            clearTransientInteractionState();
             const overlay = document.getElementById('modalOverlay');
             ['nodeModal', 'edgeModal', 'groupModal', 'memoModal', 'bgModal', 'exportModal', 'layerModal'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
@@ -4588,16 +4704,28 @@
             setTimeout(() => { overlay.classList.remove('opacity-0'); target.classList.remove('scale-95'); }, 10);
         }
 
-        function closeModal() {
+        function finalizeModalClose() {
+            const overlay = document.getElementById('modalOverlay');
+            overlay.classList.add('hidden', 'opacity-0');
+            ['nodeModal', 'edgeModal', 'groupModal', 'memoModal', 'bgModal', 'exportModal', 'layerModal'].forEach(id => {
+                const modal = document.getElementById(id);
+                modal.classList.add('hidden', 'scale-95');
+            });
+            editingNodeId = editingEdgeId = editingGroupId = editingMemoId = null;
+        }
+
+        function closeModal(immediate = false) {
+            clearTransientInteractionState();
             const overlay = document.getElementById('modalOverlay');
             ['nodeModal', 'edgeModal', 'groupModal', 'memoModal', 'bgModal', 'exportModal', 'layerModal'].forEach(id => {
                 document.getElementById(id).classList.add('scale-95');
             });
+            if (immediate) {
+                finalizeModalClose();
+                return;
+            }
             overlay.classList.add('opacity-0');
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                editingNodeId = editingEdgeId = editingGroupId = editingMemoId = null;
-            }, 200);
+            setTimeout(finalizeModalClose, 200);
         }
 
         let cropper = null;
@@ -4684,9 +4812,12 @@
                 n.labelTextColor = document.getElementById('modalNodeLabelColor').value;
                 n.memo = document.getElementById('modalNodeMemo').value;
                 n.image = tempImageBase64;
-                commitChange(); renderNodes();
+                closeModal(true);
+                commitChange();
+                renderAll();
+                return;
             }
-            closeModal();
+            closeModal(true);
         }
         function deleteNode() {
             if(!confirm("削除しますか？\n関連する線も消えます。")) return;
@@ -4755,9 +4886,12 @@
                 e.hasArrow = document.getElementById('modalEdgeArrow').checked;
                 e.style = document.getElementById('modalEdgeStyle').value;
                 e.width = parseInt(document.getElementById('modalEdgeWidth').value, 10);
-                commitChange(); renderEdges();
+                closeModal(true);
+                commitChange();
+                renderEdges();
+                return;
             }
-            closeModal();
+            closeModal(true);
         }
         function deleteEdge() {
             deleteEdgeById(editingEdgeId); closeModal();
@@ -4778,9 +4912,12 @@
                 const l = document.getElementById('modalGroupLabel').value.trim();
                 if(l !== "") g.label = l;
                 g.color = editingGroupColor;
-                commitChange(); renderGroups();
+                closeModal(true);
+                commitChange();
+                renderGroups();
+                return;
             }
-            closeModal();
+            closeModal(true);
         }
         function deleteGroup() {
             deleteGroupById(editingGroupId); closeModal();
@@ -4813,9 +4950,12 @@
                 m.color = editingMemoColor;
                 m.corners = parseInt(document.getElementById('modalMemoCorners').value, 10) || 4;
                 m.roundness = parseInt(document.getElementById('modalMemoRoundness').value, 10) || 0;
-                commitChange(); renderMemos();
+                closeModal(true);
+                commitChange();
+                renderMemos();
+                return;
             }
-            closeModal();
+            closeModal(true);
         }
         function deleteMemo() {
             deleteMemoById(editingMemoId); closeModal();
