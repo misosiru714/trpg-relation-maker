@@ -3676,7 +3676,12 @@
                         startPanning(e.clientX, e.clientY);
                         return;
                     }
-                    if (state.isConnecting || state.isEditingEdges || node.locked) return;
+                    if (state.isConnecting || state.isEditingEdges) return;
+                    if (node.locked) {
+                        e.stopPropagation();
+                        startPanning(e.clientX, e.clientY);
+                        return;
+                    }
                     if (beginSelectedItemsDrag('node', node.id, e.clientX, e.clientY)) {
                         e.stopPropagation();
                         return;
@@ -3831,7 +3836,12 @@
                         startPanning(e.clientX, e.clientY);
                         return;
                     }
-                    if (state.isConnecting || state.isEditingEdges || g.locked) return;
+                    if (state.isConnecting || state.isEditingEdges) return;
+                    if (g.locked) {
+                        e.stopPropagation();
+                        startPanning(e.clientX, e.clientY);
+                        return;
+                    }
                     if (beginSelectedItemsDrag('group', g.id, e.clientX, e.clientY)) {
                         e.stopPropagation();
                         return;
@@ -3863,9 +3873,15 @@
                 label.className = 'group-label';
                 label.innerText = g.label;
                 label.style.color = g.color;
-                label.addEventListener('mousedown', e => e.stopPropagation());
+                label.addEventListener('mousedown', e => {
+                    e.stopPropagation();
+                    if (e.button !== 0) return;
+                    if (state.isHandMode || g.locked) {
+                        startPanning(e.clientX, e.clientY);
+                    }
+                });
                 label.addEventListener('click', e => {
-                    if (state.isHandMode || state.isSelectingItems) return;
+                    if (state.isHandMode || state.isSelectingItems || g.locked) return;
                     e.stopPropagation();
                     openGroupModal(g.id);
                 });
@@ -3879,7 +3895,11 @@
                         startPanning(e.clientX, e.clientY);
                         return;
                     }
-                    if (g.locked) return;
+                    if (g.locked) {
+                        e.stopPropagation();
+                        startPanning(e.clientX, e.clientY);
+                        return;
+                    }
                     e.stopPropagation();
                     state.resizingGroupId = g.id;
                     const lp = getLocalPos(e.clientX, e.clientY);
