@@ -3465,7 +3465,7 @@
                         clonedVp.style.height = '20000px';
                     }
 
-                    clonedWs.querySelectorAll('.waypoint-add-handle, .waypoint-handle, .group-resize-handle, .node > button, .edge-label > button').forEach(el => el.remove());
+                    clonedWs.querySelectorAll('.waypoint-add-handle, .waypoint-handle, .group-resize-handle, .memo-resize-handle, .node > button, .edge-label > button').forEach(el => el.remove());
 
                     exportContainer.appendChild(clonedWs);
                     document.body.appendChild(exportContainer);
@@ -3529,7 +3529,7 @@
                                 clonedWs.style.backgroundImage = 'none';
                             }
 
-                            clonedDoc.querySelectorAll('.waypoint-add-handle, .waypoint-handle, .group-resize-handle, .node > button, .edge-label > button').forEach(el => el.style.display = 'none');
+                            clonedDoc.querySelectorAll('.waypoint-add-handle, .waypoint-handle, .group-resize-handle, .memo-resize-handle, .node > button, .edge-label > button').forEach(el => el.style.display = 'none');
                         }
                     });
 
