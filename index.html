@@ -2125,6 +2125,25 @@
         let layerDragState = null;
         let autosaveDbPromise = null;
 
+        // --- RAF スロットリング ---
+        let rafPending = false;
+        let pendingRenderFlags = { nodes: false, edges: false, groups: false, memos: false };
+
+        function scheduleRender(flags) {
+            Object.assign(pendingRenderFlags, flags);
+            if (rafPending) return;
+            rafPending = true;
+            requestAnimationFrame(() => {
+                rafPending = false;
+                const f = pendingRenderFlags;
+                pendingRenderFlags = { nodes: false, edges: false, groups: false, memos: false };
+                if (f.groups) renderGroups();
+                if (f.memos)  renderMemos();
+                if (f.nodes)  renderNodes();
+                if (f.edges)  renderEdges();
+            });
+        }
+
         function makeDisplayOrderKey(type, id) {
             return `${type}:${id}`;
         }
@@ -3688,10 +3707,12 @@
                     else if (item.type === 'group') hasGroups = true;
                     else if (item.type === 'memo') hasMemos = true;
                 });
-                if (hasGroups) renderGroups();
-                if (hasMemos) renderMemos();
-                if (hasNodes) renderNodes();
-                if (hasNodes) renderEdges();
+                scheduleRender({
+                    groups: hasGroups,
+                    memos: hasMemos,
+                    nodes: hasNodes,
+                    edges: hasNodes
+                });
                 return;
             }
 
@@ -3703,7 +3724,7 @@
                 const dy = localPos.y - start.y;
                 group.width = Math.max(100, start.width + dx);
                 group.height = Math.max(50, start.height + dy);
-                renderGroups();
+                scheduleRender({ groups: true });
                 return;
             }
 
@@ -3735,7 +3756,7 @@
                     memo.height = Math.max(minH, start.height - dy);
                 }
 
-                renderMemos();
+                scheduleRender({ memos: true });
                 return;
             }
 
@@ -3743,7 +3764,7 @@
                 const group = state.groups.find(g => g.id === state.draggedGroupId);
                 group.x = localPos.x - state.offsetX;
                 group.y = localPos.y - state.offsetY;
-                renderGroups();
+                scheduleRender({ groups: true });
                 return;
             }
 
@@ -3751,7 +3772,7 @@
                 const memo = state.memos.find(m => m.id === state.draggedMemoId);
                 memo.x = localPos.x - state.offsetX;
                 memo.y = localPos.y - state.offsetY;
-                renderMemos();
+                scheduleRender({ memos: true });
                 return;
             }
 
@@ -3760,7 +3781,7 @@
                 if (edge) {
                     edge.labelOffset.x = state.labelInitialOffset.x + (localPos.x - state.labelDragStartX);
                     edge.labelOffset.y = state.labelInitialOffset.y + (localPos.y - state.labelDragStartY);
-                    renderEdges();
+                    scheduleRender({ edges: true });
                 }
                 return;
             }
@@ -3769,7 +3790,7 @@
                 const { edge, index, offsetX = 0, offsetY = 0, displayOffsetX = 0, displayOffsetY = 0 } = state.draggedWaypoint;
                 edge.waypoints[index].x = localPos.x - offsetX - displayOffsetX;
                 edge.waypoints[index].y = localPos.y - offsetY - displayOffsetY;
-                renderEdges();
+                scheduleRender({ edges: true });
                 return;
             }
 
@@ -3779,9 +3800,9 @@
                 node.y = localPos.y - state.offsetY;
                 const el = document.getElementById(node.id);
                 if(el) { el.style.left = `${node.x}px`; el.style.top = `${node.y}px`; }
-                renderEdges();
+                scheduleRender({ edges: true });
             } else if (state.isConnecting && state.sourceNodeId) {
-                renderEdges();
+                scheduleRender({ edges: true });
             }
         }
 
