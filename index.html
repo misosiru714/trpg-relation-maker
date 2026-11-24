@@ -8,14 +8,11 @@
 <meta property="og:site_name" content="TRPG 相関図メーカー">
 <meta name="google-site-verification" content="A-MsHaV-U_3kqIUQR-8TpkHUv1BRzIGn5moQYGhgxXo" />
 <meta name="google-site-verification" content="onYm72m2wJ7I9a5E1fzAzchwSgsL39zruGnTiFzWkvc" />
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J74WB2H9G"></script>
+<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-WVX2RLHM"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
-  gtag('config', 'G-0J74WB2H9G');
 </script>
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--line:#8b929c;--sel:#2f6bd8;--ink:#23272e;--sub:#7a818c;--bd:#cfd4db;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -1087,7 +1084,7 @@ const normStatus=v=>ST[v]?v:(OLDST[v]||'normal');
 // バッジに出す文字: 自由記入があればそれ、なければ状態名(通常なら出さない)。隠す設定なら空
 const badgeText=n=>{if(n.hb)return'';const l=(n.sl||'').trim();return l||(n.st&&n.st!=='normal'&&ST[n.st]?ST[n.st].l:'')};
 const box=n=>{const pw=Math.max(72,[...n.name].reduce((t,c)=>t+(c.charCodeAt(0)>255?15:8.5),0)+24);const bt=badgeText(n);return{pw,W:Math.max(80,pw),H:112,bw:bt?Math.max(44,bt.length*11+20):0}};
-const inside=(b,x,y)=>Math.hypot(x,y+17)<=40||(Math.abs(x)<=b.pw/2&&y>=31&&y<=55)||(b.bw&&Math.abs(x)<=b.bw/2&&y>=-67&&y<=-43);
+const inside=(b,x,y)=>Math.hypot(x,y+17)<=43||(Math.abs(x)<=b.pw/2&&y>=31&&y<=55)||(b.bw&&Math.abs(x)<=b.bw/2&&y>=-70&&y<=-46);
 function endPt(n,tx,ty,a){
   const b=box(n);if(a)return{x:n.x+a.x*b.W,y:n.y+a.y*b.H};
   const dx=tx-n.x,dy=ty-n.y,l=Math.hypot(dx,dy);if(!l)return{x:n.x,y:n.y};
@@ -1194,12 +1191,12 @@ function mkNodeEl(n){
   n.ct=hx('div','node-image-container',wr);n.ct.style.cssText='position:absolute;left:17px;top:7px';
   n.im=hx('img','node-img',n.ct);n.im.draggable=false;
   n.ini=hx('span','',n.ct);n.ini.style.cssText='font:700 28px system-ui;color:#94a3b8;pointer-events:none';
-  n.bd=hx('div','node-status',wr);n.bd.style.top='0';
-  $('circle',{class:'ring',cx:0,cy:-17,r:42},g);
+  n.bd=hx('div','node-status',wr);n.bd.style.top='-3px';
+  $('circle',{class:'ring',cx:0,cy:-17,r:45},g);
   n.pill=$('rect',{y:31,height:24,rx:12},g);n.txt=$('text',{class:'nm',y:43},g);
-  [[0,-57],[0,55],[-40,-17],[40,-17]].forEach(([px,py])=>{
+  [[0,-60],[0,55],[-43,-17],[43,-17]].forEach(([px,py])=>{
     const p=$('circle',{class:'port',cx:px,cy:py,r:6},g);
-    p.onpointerdown=ev=>{ev.stopPropagation();drag={link:n.id,from:norm(n,endPt(n,n.x+px*30,n.y+py*30,null))}};
+    p.onpointerdown=ev=>{ev.stopPropagation();drag={link:n.id}};
   });
   g.onpointerdown=ev=>startMove(ev,n);
   g.ondblclick=ev=>{if(ev.target!==n.pill)pickImg(n)};
@@ -1458,7 +1455,7 @@ addEventListener('pointermove',ev=>{
   }else if(drag.gres){
     const g=drag.gres;g.w=Math.max(120,p.x-g.x);g.h=Math.max(80,p.y-g.y);updG(g);dirty=true;
   }else if(drag.link){
-    const n=D.nodes[drag.link],b=box(n),o={x:n.x+drag.from.x*b.W,y:n.y+drag.from.y*b.H};
+    const n=D.nodes[drag.link],o=endPt(n,p.x,p.y,null); // 確定後の線と同じく、カードの縁から出す
     tmp.setAttribute('d',`M${o.x} ${o.y}L${p.x} ${p.y}`);
   }
 });
@@ -1641,6 +1638,25 @@ try{
   }
 }catch(e){$i('hp').hidden=false;st('ヒントの表示状態を保存できませんでした')}
 
+/* ── 旧版の自動保存の引き継ぎ ──
+   旧版と同じURLで動かすと、旧版の自動保存(IndexedDB / localStorage)がブラウザに残っている。
+   新しい保存先が空のときだけ、それを新形式に変換して開く。旧データは消さない。 */
+async function readOldAutosave(){
+  try{
+    const db=await new Promise((ok,ng)=>{
+      const r=indexedDB.open('trpg_relation_sheet_autosave');
+      r.onupgradeneeded=()=>r.transaction.abort(); // 旧DBがなければ、空のDBを作らずに中止する
+      r.onsuccess=()=>ok(r.result);r.onerror=()=>ng(r.error);
+    });
+    if(db.objectStoreNames.contains('snapshots')){
+      const v=await new Promise((ok,ng)=>{const q=db.transaction('snapshots','readonly').objectStore('snapshots').get('latest');q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ng(q.error)});
+      db.close();if(v)return v;
+    }else db.close();
+  }catch(e){}
+  try{const s=localStorage.getItem('trpg_diagram_data_v3');if(s)return JSON.parse(s)}catch(e){}
+  return null;
+}
+
 /* ── 起動 ── */
 function demo(){
   const W=s.clientWidth,H=s.clientHeight;
@@ -1649,10 +1665,19 @@ function demo(){
     edges:[{a:'n1',b:'n2',label:'依頼'},{a:'n2',b:'n3',label:'追跡'},{a:'n3',b:'n2',label:'監視',color:'#e5484d',style:'dashed'},{a:'n4',b:'n1',label:'幼なじみ',arrow:'both'},{a:'n3',b:'n4',label:'因縁',color:'#2f6bd8',w:3.5}]});
 }
 (async()=>{
-  let v=null;
+  let v=null,migrated=false;
   try{v=await idb('get');if(v)load(JSON.parse(v))}catch(e){v=null}
+  if(!v){
+    const old=await readOldAutosave();
+    if(old&&Array.isArray(old.nodes)&&(old.nodes.length||(old.groups||[]).length||(old.memos||[]).length)){
+      try{load(fromOld(old));migrated=true;v='old'}catch(e){v=null}
+    }
+  }
   if(!v)demo();
-  fit();HS=[snap()];hi=0;btn();
+  fit();
+  if(migrated)await shrinkImgs();
+  HS=[snap()];hi=0;btn();
+  if(migrated){save(HS[0]);st('旧バージョンの自動保存データを引き継ぎました');inlineImgs()}
 })();
 </script>
 </body>
